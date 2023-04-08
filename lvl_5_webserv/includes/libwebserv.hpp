@@ -3,10 +3,18 @@
 
 # include <cstdlib>
 # include <string>
+# include <unistd.h>
 # include <iostream>
+# include <arpa/inet.h>
+# include <poll.h>
+# include <memory.h>
+
+# include "Socket.hpp"
+# include "WebServ.hpp"
 
 # define ERROR_MSG_PREFFIX "webserv: error: "
 # define ARGS_ERR "invalid arguments"
+# define POLL_ERR "fatal: poll() failed"
 
 /**
  * @brief Writes <error_msg> in the cerr stream followed by an endl.

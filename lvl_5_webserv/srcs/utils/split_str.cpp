@@ -1,6 +1,6 @@
 #include "utils.hpp"
 
-static int len(const std::string& s, const std::string& splitter)
+/* static int len(const std::string& s, const std::string& splitter)
 {
 	size_t		i = 0;
 	size_t		ret = 0;
@@ -16,7 +16,7 @@ static int len(const std::string& s, const std::string& splitter)
 		i += 1;
 	}
 	return i + 2;
-}
+} */
 
 std::vector<std::string> split_str(const std::string& s, const std::string& splitter)
 {
