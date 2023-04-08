@@ -10,6 +10,7 @@
 - [ ]  
 
 <br>
+
 <h3>
 	Configuration file
 </h3>
@@ -22,3 +23,7 @@
 - [ ] Limit client body size
 - [ ] 
 - [ ]
+
+<h3>
+	Logs in realtime of what's happening with the server
+</h3>
