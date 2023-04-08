@@ -4,11 +4,11 @@ INCLUDE = -I./includes
 VPATH = srcs srcs/utils
 RM = rm -rf
 
-GENERAL = 
+GENERAL = Socket WebServ
 UTILS = split_str
 
 NAME = webserv
-TEST_CONFIG_FILE = 
+TEST_CONFIG_FILE = a
 
 SRCS = $(addsuffix .cpp, $(UTILS))\
 	   $(addsuffix .cpp, $(GENERAL))\
