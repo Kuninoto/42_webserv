@@ -36,6 +36,12 @@
 ## Useful links
 
 **What is the HTTP protocol?**  
+[HTTP Crash Course & Exploration](https://www.youtube.com/watch?v=iYM2zFP3Zn0)
+
+**What is a Web Server?**
+[Web Server Concepts and Examples](https://www.youtube.com/watch?v=9J1nJOivdyw)
+
+[How to build a simple HTTP Server from scratch](https://medium.com/from-the-scratch/http-server-what-do-you-need-to-know-to-build-a-simple-http-server-from-scratch-d1ef8945e4fa)
 
 ---
 Made by Nuno Carvalho (Kuninoto) | nnuno-ca@student.42porto.com  

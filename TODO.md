@@ -11,11 +11,14 @@
 
 <br>
 <h3>
-	To implement:
+	Configuration file
 </h3>
 
+- [ ] Choose port and host of each 'server'
+- [ ] Setup the _server_name_ (or not)
 - [ ] 
-- [ ] 
-- [ ] 
+- [ ] Setup default error pages
+- [ ]
+- [ ] Limit client body size
 - [ ] 
 - [ ]
