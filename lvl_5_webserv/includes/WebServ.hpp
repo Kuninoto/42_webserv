@@ -3,6 +3,7 @@
 
 # include <stdint.h>
 # include <string>
+# include <map>
 
 class WebServ {
 	public:
@@ -15,6 +16,7 @@ class WebServ {
 
 	private:
 		const uint32_t port;
+		const std::map<int, std::string> error_messages;
 
 		WebServ(void);
 };

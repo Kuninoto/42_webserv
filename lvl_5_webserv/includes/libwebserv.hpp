@@ -14,7 +14,7 @@
 
 # define ERROR_MSG_PREFFIX "webserv: error: "
 # define ARGS_ERR "invalid arguments"
-# define POLL_ERR "fatal: poll() failed"
+# define POLL_FAIL "fatal: poll() failed"
 
 /**
  * @brief Writes <error_msg> in the cerr stream followed by an endl.

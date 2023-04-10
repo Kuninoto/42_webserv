@@ -5,7 +5,7 @@ VPATH = srcs srcs/utils
 RM = rm -rf
 
 GENERAL = Socket WebServ
-UTILS = split_str
+UTILS = split_str slice_vec
 
 NAME = webserv
 TEST_CONFIG_FILE = a
