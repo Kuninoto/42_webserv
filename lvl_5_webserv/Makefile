@@ -5,7 +5,7 @@ VPATH = srcs srcs/utils
 RM = rm -rf
 
 GENERAL = Socket WebServ
-UTILS = split_str slice_vec
+UTILS = splitStr sliceVec getTimeStamp
 
 NAME = webserv
 TEST_CONFIG_FILE = a

@@ -9,6 +9,7 @@
 # include <poll.h>
 # include <memory.h>
 
+# include "utils.hpp"
 # include "Socket.hpp"
 # include "WebServ.hpp"
 

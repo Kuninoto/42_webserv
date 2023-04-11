@@ -4,6 +4,9 @@
 # include <vector>
 # include <string>
 
-std::vector<std::string> split_str(const std::string& s, const std::string& splitter);
+std::vector<std::string> splitStr(const std::string& s, const std::string& splitter);
+template <typename T>
+std::vector<T> sliceVec(std::vector<T>& vec, unsigned int start_idx, unsigned int end_idx);
+const std::string getTimeStamp(void);
 
 #endif // UTILS_HPP

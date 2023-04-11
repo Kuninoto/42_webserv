@@ -41,9 +41,9 @@ int main(int argc, char **argv)
 		return panic(BINDING_ERR);
 	cout << "Binding successful" << endl;
 
-	std::string server_name("olaamigos");
-	if (setsockopt(socket.getSocketFd(), SOL_SOCKET, SO_REUSEPORT, server_name.c_str(), server_name.length()) < 0)
-		return panic(SETSOCKETOPT_ERR);
+	//std::string server_name("olaamigos");
+	//if (setsockopt(socket.getSocketFd(), SOL_SOCKET, SO_REUSEPORT, server_name.c_str(), server_name.length()) < 0)
+	//	return panic(SETSOCKETOPT_ERR);
 
 	listen(socket.getSocketFd(), NR_PENDING_CONNECTIONS);
 
@@ -61,6 +61,8 @@ int main(int argc, char **argv)
 	size_t num;
 
 	std::string buffer_cpp;
+
+	cout << getTimeStamp() << endl;
 
 	while (!g_stopServer)
 	{
@@ -94,9 +96,6 @@ int main(int argc, char **argv)
 					if (recv(pollfds[i].fd, buffer, 1024, 0) > 0)
 					{					
 						cout << endl;
-						//std::string user_connection(buffer);
-
-						//server.addUser(user_connection.substr(5), user_connection.substr());
 						cout << buffer << endl;
 						bzero(buffer, 1024);
 					}
@@ -104,7 +103,7 @@ int main(int argc, char **argv)
 					{
 						cout << "connection close" << endl;
 						pollfds[i].fd = -1;
-						// user.disconnect();
+						//close(pollfds[i].fd);
 						break;
 					}
 				}
@@ -112,8 +111,7 @@ int main(int argc, char **argv)
 
 			if (pollfds[i].revents & POLLOUT)
 			{
-
-				std::ifstream file("pages/404.html");
+				std::ifstream file("pages/error/404.html");
 
 				if (!file.is_open())
 					std::cerr << "Failed to open file" << '\n';

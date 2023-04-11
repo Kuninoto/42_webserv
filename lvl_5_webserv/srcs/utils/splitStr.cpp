@@ -18,7 +18,7 @@
 	return i + 2;
 } */
 
-std::vector<std::string> split_str(const std::string& s, const std::string& splitter)
+std::vector<std::string> splitStr(const std::string& s, const std::string& splitter)
 {
 	std::vector<std::string>    now;
 	std::string					tmp;
