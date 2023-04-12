@@ -12,7 +12,7 @@ class WebServ {
 
 		uint16_t getPort(void) const;
 
-		// <?> parseConfigFile;
+		void parseConfigFile(std::string file);
 
 	private:
 		const uint32_t port;
