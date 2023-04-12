@@ -14,6 +14,20 @@ class WebServ {
 
 		void parseConfigFile(std::string file);
 
+		class NoServerTagException : public std::exception {
+			public:
+				virtual const char* what() const throw() {
+					return "Invalid config file: no server keyword";
+				}
+		};
+
+		class UnknownTagException : public std::exception {
+			public:
+				virtual const char* what() const throw() {
+					return "Invalid config file: unknown keyword";
+				}
+		};
+
 	private:
 		const uint32_t port;
 		const std::map<int, std::string> error_messages;

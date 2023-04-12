@@ -23,6 +23,8 @@ int main(int argc, char **argv)
 
 	WebServ server = WebServ(PORT);
 
+	server.parseConfigFile(argv[1]);
+
 	cout << "WEB SERVER" << endl;
 	cout << "Port: " << server.getPort() << endl;
 

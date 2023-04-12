@@ -4,7 +4,7 @@
 # include <vector>
 # include <string>
 
-std::vector<std::string> splitStr(const std::string& s, const std::string& splitter);
+std::vector<std::string> splitStr(std::string& str, const std::string& delimiter);
 template <typename T>
 std::vector<T> sliceVec(std::vector<T>& vec, unsigned int start_idx, unsigned int end_idx);
 const std::string getTimeStamp(void);
