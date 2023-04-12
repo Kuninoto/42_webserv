@@ -8,7 +8,7 @@ GENERAL = Socket WebServ
 UTILS = splitStr sliceVec getTimeStamp
 
 NAME = webserv
-TEST_CONFIG_FILE = a
+TEST_CONFIG_FILE = config/inception.conf
 
 SRCS = $(addsuffix .cpp, $(UTILS))\
 	   $(addsuffix .cpp, $(GENERAL))\
