@@ -23,8 +23,6 @@ int main(int argc, char **argv)
 
 	WebServ server;
 
-	server.parseConfigFile(argv[1]);
-
 	cout << "WEB SERVER" << endl;
 	cout << "Port: " << server.getPort() << endl;
 
@@ -116,7 +114,6 @@ int main(int argc, char **argv)
 					{
 						buffer[1023] = '\0';
 						clients.at(i - 1).setRequest(std::string(buffer));
-						cout << buffer << endl;
 						bzero(buffer, 1024);
 					}
 					else
