@@ -4,6 +4,12 @@
 # include <stdint.h>
 # include <string>
 # include <map>
+# include <signal.h>
+# include <iostream>
+# include <fstream>
+
+# include "utils.hpp"
+
 
 class WebServ {
 	public:
@@ -18,6 +24,13 @@ class WebServ {
 			public:
 				virtual const char* what() const throw() {
 					return "Invalid config file: no server keyword";
+				}
+		};
+
+		class FailedToOpenFile : public std::exception {
+			public:
+				virtual const char* what() const throw() {
+					return "Invalid config file: Couldn't open the file";
 				}
 		};
 

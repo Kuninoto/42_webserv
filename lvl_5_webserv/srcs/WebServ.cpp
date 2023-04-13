@@ -44,51 +44,63 @@ static int parse_port_number(const std::string& port_as_str)
 void WebServ::parseConfigFile(std::string fileName)
 {
 	std::ifstream file(fileName.c_str(), std::ifstream::in);
+	bool inside = false;
 
-//	if (!file.is_open())
-//		return failed to open config file
+	if (!file.is_open())
+		throw FailedToOpenFile();
 
 	std::string buffer;
 	while (std::getline(file, buffer))
 	{
-		if (buffer.find("{") != std::string::npos)
+		// Check if string is empty
+		if (emptyStr(buffer))
+			continue; 
+		else if (buffer.find("{") != std::string::npos && inside != true)
 		{
-			std::vector<std::string> splitted = splitStr(buffer, ' ');
+			std::vector<std::string> splitted = splitStr(buffer, " ");
 
-			//std::cout << "\"" << splitted.at(0) << "\"" << std::endl;
+			std::cout << "\"" << splitted.at(0) << "\"" << std::endl;
+
 			// if not valid identifier
 			if (splitted.at(0) != "server")
 				throw NoServerTagException();
-
+			inside = true;
+		}
+		else if (buffer.find("}") != std::string::npos && inside == true)
+		{
+			// The event scope was closed
+			inside = false;
+		}
+		else if (inside == true)
+		{
 			// inside server {}
 			std::map<std::string, std::string> test;
-			while (std::getline(file, buffer))
-			{
-				std::cout << "BUFFER = " << buffer << std::endl;
-				std::vector<std::string> splitted2 = splitStr(buffer, ' ');
-				std::cout << "a: " << splitted2.at(1) << std::endl;
-				std::string temp;
+			std::cout << "BUFFER = " << buffer << std::endl;
 
-				if (splitted2.at(0) == "listen")
-				{
-					temp = splitted2.at(1);
-					test[splitted2.at(0)] = temp;
+			// SPLIT IS NOT WORKING PROPERLY
+			std::vector<std::string> splitted2 = splitStr(buffer, " ");
 
-					temp.clear();
-					int port_temp = parse_port_number(test["listen"]); 
-					if (port_temp == -1)
-						std::cout << "FAIL" << std::endl;
-					this->port = parse_port_number(test["listen"]);
-					std::cout << "LISTEN VALUE = " << "\" "<< test["listen"] << "\" " << std::endl;
-					std::cout << "PORT = " << this->port << std::endl;
-					exit(0);
-					break ;
-				}
-				else
-					throw UnknownTagException();
-			}
+			// Verify if it's a valid option
+			if (splitted2.at(0) == "listen")
+				test[splitted2.at(0)] = splitted2.at(1);
+			else if (splitted2.at(0) == "root")
+				test[splitted2.at(0)] = splitted2.at(1);
+			else if (splitted2.at(0) == "index")
+				test[splitted2.at(0)] = splitted2.at(1);
+			else if (splitted2.at(0) == "server_name")
+				test[splitted2.at(0)] = splitted2.at(1);
+			// else if (splitted2.at(0) == "location")
+			// {
+			// 	//deal with location
+			// }
+			else
+				throw UnknownTagException();
 		}
-		break;
+		else
+		{
+			std::cout << "mistakes were made" << std::endl;
+			// ! There is a mistake in the file. Error handling
+		}
 	}
 	
 }
