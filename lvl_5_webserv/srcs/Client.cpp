@@ -1,22 +1,27 @@
 #include "Client.hpp"
 
-#include <iostream>
-#include <fstream>
-#include <unistd.h>
-
 Client::Client(int fd): fd(fd), request_sent(false){}
 
 void Client::setRequest(std::string request)
 {
     this->request_sent = false;
-    this->request = request; 
+    this->request.append(request); 
 }
 
 void Client::response()
 {
-    if (request_sent)
+    // if already sent or request is not complete return
+    if (request_sent || request.find("\r\n\r\n") == std::string::npos)
         return;
     request_sent = true;
+
+    std::string line;
+    std::ifstream request_steam(request.c_str());
+
+    getline(request_steam, line);
+
+    std::cout << request << std::endl;
+
 
     std::string coisa;
     //? GET [name]
@@ -37,9 +42,11 @@ void Client::response()
         return ;
     }
 
-    std::string header("HTTP/1.1 200 OK\r\nContent-Type: image/png\r\nContent-Length: 85405\r\n\r\n");
-    std::string img((std::istreambuf_iterator<char>(img_file)), std::istreambuf_iterator<char>());
+    //std::string header("HTTP/1.1 200 OK\r\nContent-Type: image/png\r\nContent-Length: 85405\r\n\r\n");
+    //std::string img((std::istreambuf_iterator<char>(img_file)), std::istreambuf_iterator<char>());
 
-    write(fd , header.c_str() , header.length());
-    write(fd , img.c_str(), img.length());
+    std::string hello((std::istreambuf_iterator<char>(img_file)), std::istreambuf_iterator<char>());	
+    write(fd , hello.c_str() , hello.length());
+    //write(fd , img.c_str(), img.length());
+    request.clear();
 }

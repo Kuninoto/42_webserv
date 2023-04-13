@@ -31,15 +31,16 @@ WebServ::~WebServ(void){};
  * @return On success: port number
  * On error: -1 (invalid port number)
  */
-/* static int parse_port_number(const std::string& port_as_str)
+static int parsePortNumber(const std::string& port_as_str)
 {
 	unsigned long temp = strtoul(port_as_str.c_str(), NULL, 10);
 	bool strtoul_success = (temp == UINT64_MAX && errno == ERANGE) ? false : true;
 
-	if (port_as_str.find_first_not_of("0123456789") != std::string::npos || !strtoul_success || temp > UINT16_MAX)
+	if (port_as_str.find_first_not_of("0123456789") != std::string::npos 
+	|| !strtoul_success || temp > UINT16_MAX)
 		return -1;
 	return (int)temp;
-} */
+}
 
 void WebServ::parseConfigFile(std::string fileName)
 {
@@ -52,10 +53,9 @@ void WebServ::parseConfigFile(std::string fileName)
 	std::string buffer;
 	while (std::getline(file, buffer))
 	{
-		// Check if string is empty
-		if (emptyStr(buffer))
-			continue; 
-		else if (buffer.find("{") != std::string::npos && inside != true)
+		if (buffer.find_first_not_of(" \n") == std::string::npos)
+			continue ;
+		if (buffer.find("{") != std::string::npos && inside != true)
 		{
 			std::vector<std::string> splitted = splitStr(buffer, ' ');
 
@@ -75,26 +75,31 @@ void WebServ::parseConfigFile(std::string fileName)
 		{
 			// inside server {}
 			std::map<std::string, std::string> test;
-			std::cout << "BUFFER = " << buffer << std::endl;
-
-			// SPLIT IS NOT WORKING PROPERLY
 			std::vector<std::string> splitted2 = splitStr(buffer, ' ');
-
-			// Verify if it's a valid option
+			if (splitted2.size() < 2)
+				throw KeywordWithoutValueException(); 
+			splitted2.at(1).erase(splitted2.at(1).length() - 1);
 			if (splitted2.at(0) == "listen")
-				test[splitted2.at(0)] = splitted2.at(1);
-			else if (splitted2.at(0) == "root")
-				test[splitted2.at(0)] = splitted2.at(1);
-			else if (splitted2.at(0) == "index")
-				test[splitted2.at(0)] = splitted2.at(1);
-			else if (splitted2.at(0) == "server_name")
+			{
+				std::cout << "PORT AS STR = " << "\"" << splitted2.at(1) << "\"" << std::endl;
+				int temp_port = parsePortNumber(splitted2.at(1));
+				if (temp_port == -1)
+					throw InvalidPortNumberException();
+				this->ports.push_back(temp_port);
+			}
+			else if (splitted2.at(0) == "root"
+			|| splitted2.at(0) == "index"
+			|| splitted2.at(0) == "server_name")
 				test[splitted2.at(0)] = splitted2.at(1);
 			// else if (splitted2.at(0) == "location")
 			// {
 			// 	//deal with location
 			// }
 			else
+			{
+				std::cout << "Invalid tag = " << "\"" << splitted2.at(0) << "\"" << std::endl;
 				throw UnknownTagException();
+			}
 		}
 		else
 		{
@@ -102,9 +107,8 @@ void WebServ::parseConfigFile(std::string fileName)
 			// ! There is a mistake in the file. Error handling
 		}
 	}
-	
 }
 
-uint16_t WebServ::getPort(void) const {
-	return this->port;
+const std::vector<uint16_t>& WebServ::getPorts(void) const {
+	return this->ports;
 }

@@ -2,6 +2,12 @@
 # define CLIENT_HPP
 
 #include <string>
+#include <iostream>
+#include <fstream>
+#include <unistd.h>
+#include <cstring>
+
+#include "utils.hpp"
 
 typedef enum methods {
     GET,
