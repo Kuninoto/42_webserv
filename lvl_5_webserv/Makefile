@@ -4,11 +4,11 @@ INCLUDE = -I./includes
 VPATH = srcs srcs/utils
 RM = rm -rf
 
-GENERAL = Socket WebServ
+GENERAL = Socket WebServ Client
 UTILS = splitStr sliceVec getTimeStamp
 
 NAME = webserv
-TEST_CONFIG_FILE = a
+TEST_CONFIG_FILE = config/inception.conf
 
 SRCS = $(addsuffix .cpp, $(UTILS))\
 	   $(addsuffix .cpp, $(GENERAL))\

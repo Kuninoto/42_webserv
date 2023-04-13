@@ -1,8 +1,8 @@
 #include "libwebserv.hpp"
 
-#include <stdio.h>
 #include <iostream>
-#include <fstream>
+#include <stdio.h>
+
 
 using std::cout;
 using std::endl;
@@ -21,7 +21,9 @@ int main(int argc, char **argv)
 	if (!socket.setSocketFd())
 		return panic(SOCKET_OPEN_ERR);
 
-	WebServ server = WebServ(PORT);
+	WebServ server;
+
+	server.parseConfigFile(argv[1]);
 
 	cout << "WEB SERVER" << endl;
 	cout << "Port: " << server.getPort() << endl;
@@ -45,6 +47,8 @@ int main(int argc, char **argv)
 	//if (setsockopt(socket.getSocketFd(), SOL_SOCKET, SO_REUSEPORT, server_name.c_str(), server_name.length()) < 0)
 	//	return panic(SETSOCKETOPT_ERR);
 
+	std::vector<Client> clients;
+
 	listen(socket.getSocketFd(), NR_PENDING_CONNECTIONS);
 
 	int addrlen = sizeof(address);
@@ -52,12 +56,14 @@ int main(int argc, char **argv)
 
 	cout << "Listening..." << endl;
 
-	struct pollfd *pollfds = new struct pollfd[10];
+	size_t max_fds = 1;
+	struct pollfd *pollfds = (struct pollfd *)malloc(max_fds * sizeof(struct pollfd));
+	//struct pollfd *pollfds = new struct pollfd[max_fds];
 
 	pollfds->fd = socket.getSocketFd();
 	pollfds->events = POLLIN;
+	size_t open_fds = 1;
 	pollfds->revents = 0;
-	size_t numfds = 1;
 	size_t num;
 
 	std::string buffer_cpp;
@@ -66,17 +72,19 @@ int main(int argc, char **argv)
 
 	while (!g_stopServer)
 	{
-		num = numfds;
+		num = open_fds;
 		if (poll(pollfds, num, -1) == -1)
 		{
-			delete[] pollfds;
+			free(pollfds);
+			shutdown(socket.getSocketFd(), SHUT_RDWR);
+			close(socket.getSocketFd());
 			if (!g_stopServer)
 				return panic(POLL_FAIL);
 			else
 				return 0;
 		}
 
-		for (size_t i = 0; i <= numfds; i += 1)
+		for (size_t i = 0; i < open_fds; i += 1)
 		{
 			if (pollfds[i].fd <= 0)
 				continue;
@@ -85,54 +93,52 @@ int main(int argc, char **argv)
 			{
 				if (pollfds[i].fd == socket.getSocketFd())
 				{
-					numfds += 1;
-					pollfds[numfds - 1].fd = accept(socket.getSocketFd(), (struct sockaddr *)&address, (socklen_t *)&addrlen); // == -1 -> erro
-					pollfds[numfds - 1].events = POLLIN | POLLOUT;
-					pollfds[numfds - 1].revents = 0;
+					if (open_fds == max_fds)
+					{
+						cout << "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaA" << endl;
+						pollfds = (struct pollfd *)realloc(pollfds, sizeof(struct pollfd) * (open_fds + 1));
+						max_fds += 1;
+					}
+					open_fds += 1;
+
+					//TODO accept to inside constructor amd get it with getFd to save in pollfds[...].fd, also throw inside if error and catch here
+					pollfds[open_fds - 1].fd = accept(socket.getSocketFd(), (struct sockaddr *)&address, (socklen_t *)&addrlen); // == -1 -> erro
+					clients.push_back(Client((int)pollfds[open_fds - 1].fd));
+					// -------
+
+					pollfds[open_fds - 1].events = POLLIN | POLLOUT;
+					pollfds[open_fds - 1].revents = 0;
 					cout << "New request!" << endl;
 				}
 				else
 				{
-					if (recv(pollfds[i].fd, buffer, 1024, 0) > 0)
-					{					
-						cout << endl;
+					if (recv(pollfds[i].fd, buffer, 1023, 0) > 0)
+					{
+						buffer[1023] = '\0';
+						clients.at(i - 1).setRequest(std::string(buffer));
 						cout << buffer << endl;
 						bzero(buffer, 1024);
 					}
 					else
 					{
 						cout << "connection close" << endl;
-						pollfds[i].fd = -1;
-						//close(pollfds[i].fd);
-						break;
+						close(pollfds[i].fd);
+						for (size_t j = i; j < open_fds - 1; j++)
+							pollfds[j].fd = pollfds[j + 1].fd;						
+						pollfds[open_fds - 1].fd = -1;
+						open_fds -= 1;
 					}
 				}
 			}
 
 			if (pollfds[i].revents & POLLOUT)
 			{
-				std::ifstream file("pages/error/404.html");
-
-				if (!file.is_open())
-					std::cerr << "Failed to open file" << '\n';
-
-				std::string hello((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());	
-
-				write(pollfds[numfds - 1].fd , hello.c_str() , hello.length());
-
-
-				/* std::ifstream img_file("folhas.png", std::ios::binary | std::ios::in);
-
-				std::string header("HTTP/1.1 200 OK\r\nContent-Type: image/png\r\nContent-Length: 85405\r\n\r\n");
-				std::string img((std::istreambuf_iterator<char>(img_file)), std::istreambuf_iterator<char>()); */
-
-				/* write(pollfds[numfds - 1].fd , header.c_str() , header.length());
-				write(pollfds[numfds - 1].fd , img.c_str(), img.length()); */
+				clients.at(i - 1).response();
 			}
 		}
 	}
 
-	delete[] pollfds;
+	free(pollfds);
 	shutdown(socket.getSocketFd(), SHUT_RDWR);
 	close(socket.getSocketFd());
 	return EXIT_SUCCESS;
