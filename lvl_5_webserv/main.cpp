@@ -25,8 +25,6 @@ int main(int argc, char **argv)
 
 	server.parseConfigFile(argv[1]);
 
-	server.parseConfigFile(argv[1]);
-
 	cout << "WEB SERVER" << endl;
 	cout << "Port: " << server.getPort() << endl;
 

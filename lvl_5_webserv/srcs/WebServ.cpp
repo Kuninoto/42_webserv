@@ -31,7 +31,7 @@ WebServ::~WebServ(void){};
  * @return On success: port number
  * On error: -1 (invalid port number)
  */
-static int parse_port_number(const std::string& port_as_str)
+/* static int parse_port_number(const std::string& port_as_str)
 {
 	unsigned long temp = strtoul(port_as_str.c_str(), NULL, 10);
 	bool strtoul_success = (temp == UINT64_MAX && errno == ERANGE) ? false : true;
@@ -39,7 +39,7 @@ static int parse_port_number(const std::string& port_as_str)
 	if (port_as_str.find_first_not_of("0123456789") != std::string::npos || !strtoul_success || temp > UINT16_MAX)
 		return -1;
 	return (int)temp;
-}
+} */
 
 void WebServ::parseConfigFile(std::string fileName)
 {
@@ -57,7 +57,7 @@ void WebServ::parseConfigFile(std::string fileName)
 			continue; 
 		else if (buffer.find("{") != std::string::npos && inside != true)
 		{
-			std::vector<std::string> splitted = splitStr(buffer, " ");
+			std::vector<std::string> splitted = splitStr(buffer, ' ');
 
 			std::cout << "\"" << splitted.at(0) << "\"" << std::endl;
 
@@ -78,7 +78,7 @@ void WebServ::parseConfigFile(std::string fileName)
 			std::cout << "BUFFER = " << buffer << std::endl;
 
 			// SPLIT IS NOT WORKING PROPERLY
-			std::vector<std::string> splitted2 = splitStr(buffer, " ");
+			std::vector<std::string> splitted2 = splitStr(buffer, ' ');
 
 			// Verify if it's a valid option
 			if (splitted2.at(0) == "listen")
