@@ -9,9 +9,12 @@
 # include <poll.h>
 # include <memory.h>
 
+# include <vector>
+
 # include "utils.hpp"
 # include "Socket.hpp"
 # include "WebServ.hpp"
+# include "Client.hpp"
 
 # define ERROR_MSG_PREFFIX "webserv: error: "
 # define ARGS_ERR "invalid arguments"
