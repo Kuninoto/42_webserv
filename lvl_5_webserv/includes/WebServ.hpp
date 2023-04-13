@@ -7,42 +7,54 @@
 # include <signal.h>
 # include <iostream>
 # include <fstream>
-
 # include "utils.hpp"
-
 
 class WebServ {
 	public:
 		WebServ(void);
 		~WebServ(void);
 
-		uint16_t getPort(void) const;
+		const std::vector<uint16_t>& getPorts(void) const;
 
 		void parseConfigFile(std::string file);
 
 		class NoServerTagException : public std::exception {
 			public:
 				virtual const char* what() const throw() {
-					return "Invalid config file: no server keyword";
+					return "no server keyword";
 				}
 		};
 
 		class FailedToOpenFile : public std::exception {
 			public:
 				virtual const char* what() const throw() {
-					return "Invalid config file: Couldn't open the file";
+					return "couldn't open the file";
 				}
 		};
 
 		class UnknownTagException : public std::exception {
 			public:
 				virtual const char* what() const throw() {
-					return "Invalid config file: unknown keyword";
+					return "unknown keyword";
+				}
+		};
+
+		class KeywordWithoutValueException : public std::exception {
+			public:
+				virtual const char* what() const throw() {
+					return "keyword without value";
+				}
+		};
+
+		class InvalidPortNumberException : public std::exception {
+			public:
+				virtual const char* what() const throw() {
+					return "invalid port number";
 				}
 		};
 
 	private:
-		uint32_t port;
+		std::vector<uint16_t> ports;
 		const std::map<int, std::string> error_messages;
 };
 
