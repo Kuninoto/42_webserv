@@ -3,14 +3,24 @@
 #include <iostream>
 #include <stdio.h>
 
-
 using std::cout;
+using std::cerr;
 using std::endl;
 
 # define PORT 8080
 # define NR_PENDING_CONNECTIONS 10
 
 bool g_stopServer = false;
+
+void printUintVecStorage(const std::vector<unsigned short>& v)
+{
+    std::vector<unsigned short>::const_iterator itr;
+
+    std::cout << "vec = ";
+    for (itr = v.begin(); itr != v.end(); itr++)
+        std::cout << "\"" << *itr << "\"";
+    std::cout << std::endl;
+}
 
 int main(int argc, char **argv)
 {
@@ -23,10 +33,17 @@ int main(int argc, char **argv)
 
 	WebServ server;
 
-	server.parseConfigFile(argv[1]);
+	try {
+		server.parseConfigFile(argv[1]);
+	}
+	catch (std::exception& e) {
+		cerr << ERROR_MSG_PREFFIX << "invalid config file: " << e.what() << endl;
+		return EXIT_FAILURE;
+	}
 
 	cout << "WEB SERVER" << endl;
-	cout << "Port: " << server.getPort() << endl;
+	cout << "Ports: ";
+	printUintVecStorage(server.getPorts());
 
 	int opt = 0;
 	if (setsockopt(socket.getSocketFd(), SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(int)) < 0)
@@ -36,7 +53,9 @@ int main(int argc, char **argv)
 
 	address.sin_family = AF_INET;
 	address.sin_addr.s_addr = INADDR_ANY;
-	address.sin_port = htons(server.getPort());
+
+	// How to handle more than one port ?
+	address.sin_port = htons(server.getPorts().at(0));
 
 	cout << "Trying to bind..." << endl;
 	if (bind(socket.getSocketFd(), (struct sockaddr *)&address, sizeof(address)) == -1)
@@ -131,8 +150,7 @@ int main(int argc, char **argv)
 				}
 			}
 
-			if (pollfds[i].revents & POLLOUT)
-			{
+			if (pollfds[i].revents & POLLOUT) {
 				clients.at(i - 1).response();
 			}
 		}
