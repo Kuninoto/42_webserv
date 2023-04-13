@@ -5,7 +5,7 @@ VPATH = srcs srcs/utils
 RM = rm -rf
 
 GENERAL = Socket WebServ Client
-UTILS = splitStr sliceVec getTimeStamp
+UTILS = splitStr sliceVec getTimeStamp others
 
 NAME = webserv
 TEST_CONFIG_FILE = config/inception.conf

@@ -8,5 +8,6 @@ std::vector<std::string> splitStr(const std::string& s, char delimiter);
 template <typename T>
 std::vector<T> sliceVec(std::vector<T>& vec, unsigned int start_idx, unsigned int end_idx);
 const std::string getTimeStamp(void);
+bool	emptyStr(std::string line);
 
 #endif // UTILS_HPP
