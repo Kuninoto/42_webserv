@@ -45,7 +45,7 @@ void WebServ::parseConfigFile(std::string fileName)
 {
 	std::ifstream file(fileName.c_str(), std::ifstream::in);
 	bool inside = false;
-
+	
 	if (!file.is_open())
 		throw FailedToOpenFile();
 
