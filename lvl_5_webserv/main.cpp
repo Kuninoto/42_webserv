@@ -24,6 +24,43 @@ void printUintVecStorage(const std::vector<unsigned short>& v)
 
 int main(int argc, char **argv)
 {
+	(void)argc;
+	(void)argv;
+    Lexer lexer(argv[1]);
+    Token token;
+
+    while (true)
+	{
+        token = lexer.nextToken();
+        switch (token.type) {
+            case UNKNOWN:
+                std::cout << "Error: unexpected character '" << token.value << "' on line " << lexer.line_number << endl;
+                break;
+            case KEYWORD:
+                std::cout << "Keyword: " << token.value << std::endl;
+                break;
+            case PARAMETER:
+                std::cout << "Parameter: " << token.value << std::endl;
+                break;
+			case LEFT_CURLY_BRACKET:
+                std::cout << "LEFT CURLY BRACKET" << std::endl;
+                break;
+			case RIGHT_CURLY_BRACKET:
+                std::cout << "RIGHT CURLY BRACKET" << std::endl;
+                break;
+            case END_OF_FILE:
+                std::cout << "End of file" << std::endl;
+                break;
+        }
+		if (token.type == END_OF_FILE)
+			break;
+    };
+    return EXIT_SUCCESS;
+}
+
+
+
+/*
 	if (argc != 2 || !argv[1][0])
 		return panic(ARGS_ERR);
 
@@ -161,3 +198,5 @@ int main(int argc, char **argv)
 	close(socket.getSocketFd());
 	return EXIT_SUCCESS;
 }
+
+*/
