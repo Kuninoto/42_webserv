@@ -54,7 +54,7 @@ void WebServ::parseConfigFile(std::string fileName)
 	while (std::getline(file, buffer))
 	{
 		if (buffer.find_first_not_of(" \n") == std::string::npos)
-			continue ;
+			continue;
 		if (buffer.find("{") != std::string::npos && inside != true)
 		{
 			std::vector<std::string> splitted = splitStr(buffer, ' ');

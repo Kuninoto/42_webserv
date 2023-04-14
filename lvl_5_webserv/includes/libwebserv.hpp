@@ -13,6 +13,7 @@
 
 # include "utils.hpp"
 # include "Socket.hpp"
+# include "Lexer.hpp"
 # include "WebServ.hpp"
 # include "Client.hpp"
 
