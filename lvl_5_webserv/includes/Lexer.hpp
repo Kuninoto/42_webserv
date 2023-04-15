@@ -1,20 +1,15 @@
-#include <vector>
+#include <map>
 #include <string>
-#include <iostream>
 #include <fstream>
 
-enum TokenType
-{
-    UNKNOWN,
+enum TokenType {
     KEYWORD,
-    PARAMETER,
     LEFT_CURLY_BRACKET,
     RIGHT_CURLY_BRACKET,
     END_OF_FILE,
 };
 
-struct Token
-{
+struct Token {
     TokenType type;
     std::string value;
 };
@@ -25,12 +20,22 @@ class Lexer {
         ~Lexer(void);
         Token nextToken(void);
 
-        size_t line_number;
+        std::map<std::string, std::string> parameters;
+
+        class LexerException : public std::exception {
+            public:
+                LexerException(const std::string& message) : message(message) {};
+
+                virtual const char* what() const throw() {
+                    return message.c_str();
+                };
+            private:
+                const std::string& message;
+        };
 
     private:
-        char current_char;
         std::ifstream file;
-        std::vector<std::string> keywords;
+        char current_char;
         void consumeWhiteSpace(void);
         void consumeComment(void);
         void consumeKeyword(std::string& token_value);

@@ -1,23 +1,24 @@
+#include <fstream>
+#include <sstream>
 #include "Lexer.hpp"
 
 bool isValidKeyword(const std::string& value)
 {
-    std::string keywords[7] = {"server", "listen", "index",
-                               "root", "cgi", "error_page",
-                               "location"};
+    std::string keywords[8] = {"server", "listen", "index", 
+                               "server_name", "root", "cgi",
+                               "error_page", "location"};
 
     return (value == keywords[0] || value == keywords[1]
         ||  value == keywords[2] || value == keywords[3]
         ||  value == keywords[4] || value == keywords[5]
-        ||  value == keywords[6]);
+        ||  value == keywords[6] || value == keywords[7]);
 }
 
 Lexer::Lexer(const std::string& filename)
 {
     file.open(filename.c_str());
     if (!file.is_open())
-        throw "FICHEIRO NAO EXISTE";
-    line_number = 1;
+        throw LexerException("Failed to open config file");
     current_char = file.get();
 }
 
@@ -37,22 +38,6 @@ Token Lexer::nextToken(void)
             consumeComment();
             continue;
         }
-        if (isalpha(current_char)) {
-            value += current_char;
-            consumeKeyword(value);
-            return (Token){ KEYWORD, value };
-        }
-        if (current_char == ' ') {
-            this->current_char = file.get();
-            while (!file.eof() && this->current_char != ';'
-            && current_char != '\n')
-            {
-                value += current_char;
-                this->current_char = file.get();
-            }
-            current_char = file.get();
-            return (Token){ PARAMETER, value };
-        }
         if (current_char == '{') {
             current_char = file.get();
             return (Token){ LEFT_CURLY_BRACKET, "{" };
@@ -61,10 +46,13 @@ Token Lexer::nextToken(void)
             current_char = file.get();
             return (Token){ RIGHT_CURLY_BRACKET, "}" };
         }
-        // Invalid character
+        if (isalpha(current_char)) {
+            value += current_char;
+            consumeKeyword(value);
+            return (Token){ KEYWORD, value};
+        }
         value += current_char;
         current_char = file.get();
-        return (Token){ UNKNOWN, value };
     }
     return (Token){ END_OF_FILE, "" };
 }
@@ -72,31 +60,45 @@ Token Lexer::nextToken(void)
 void Lexer::consumeWhiteSpace(void)
 {
     while (!this->file.eof() && isspace(this->current_char))
-    {
-        if (this->current_char == '\n') {
-            this->line_number += 1;
-        }
         this->current_char = file.get();
-    }
 }
 
 void Lexer::consumeComment(void)
 {
     while (!this->file.eof() && this->current_char != '\n')
         this->current_char = file.get();
-    this->line_number += 1;
 }
 
 void Lexer::consumeKeyword(std::string& token_value)
 {
-    this->current_char = this->file.get();
-    while (!file.eof() && (isalnum(this->current_char) || current_char == '_'))
-    {
+    current_char = this->file.get();
+    std::string parameter_value;
+
+    while (!this->file.eof() && (isalnum(current_char) || current_char == '_')) {
         token_value += current_char;
-        this->current_char = file.get();
+        current_char = this->file.get();
     }
     if (!isValidKeyword(token_value))
-        throw "invalid keyword";
+        throw LexerException("Unknown keyword \"" + token_value + "\"");
+    if (token_value == "server")
+        return ;
+    // Check for parameters
+    if (current_char == ' ')
+    {
+        consumeWhiteSpace();
+        parameter_value = "";
+        while (!this->file.eof() && current_char != ';')
+        {
+            if (current_char == ' ')
+                throw LexerException("Keyword \"" + token_value + "\" has more than one parameter");
+            parameter_value += current_char;
+            current_char = this->file.get();
+        }
+        if (parameter_value.empty())
+            throw LexerException("Empty parameter found for keyword \"" + token_value + "\"");
+        parameters[token_value] = parameter_value;
+    }
+    this->current_char = this->file.get();
 }
 
 Lexer::~Lexer(void) {
