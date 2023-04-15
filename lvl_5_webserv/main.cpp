@@ -24,35 +24,32 @@ void printUintVecStorage(const std::vector<unsigned short>& v)
 
 int main(int argc, char **argv)
 {
-	(void)argc;
-    Lexer lexer(argv[1]);
-    Token token;
-	std::string last_keyword;
+	std::vector<WebServ&> servers = parseConfigFile(argv[1]);
 
-    while (true)
-	{
-        token = lexer.nextToken();
-        switch (token.type) {
-            case KEYWORD:
-                std::cout << "Keyword: " << token.value << std::endl;
-                std::cout << "Parameter: " << lexer.parameters[token.value] << std::endl;
-                break;
-			case LEFT_CURLY_BRACKET:
-                std::cout << "LEFT CURLY BRACKET" << std::endl;
-                break;
-			case RIGHT_CURLY_BRACKET:
-                std::cout << "RIGHT CURLY BRACKET" << std::endl;
-                break;
-            case END_OF_FILE:
-                std::cout << "End of file" << std::endl;
-                break;
-        }
-		if (token.type == END_OF_FILE)
-			break;
-    };
     return EXIT_SUCCESS;
 }
 
+//while (true)
+//{
+//    token = lexer.nextToken();
+//    switch (token.type) {
+//        case KEYWORD:
+//            std::cout << "Keyword: " << token.value << std::endl;
+//            std::cout << "Parameter: " << lexer.parameters[token.value] << std::endl;
+//            break;
+//		case LEFT_CURLY_BRACKET:
+//            std::cout << "LEFT CURLY BRACKET" << std::endl;
+//            break;
+//		case RIGHT_CURLY_BRACKET:
+//            std::cout << "RIGHT CURLY BRACKET" << std::endl;
+//            break;
+//        case END_OF_FILE:
+//            std::cout << "End of file" << std::endl;
+//            break;
+//    }
+//	if (token.type == END_OF_FILE)
+//		break;
+//};
 
 
 /*

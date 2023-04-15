@@ -4,9 +4,6 @@
 # include <stdint.h>
 # include <string>
 # include <map>
-# include <signal.h>
-# include <iostream>
-# include <fstream>
 # include "utils.hpp"
 
 class WebServ {
@@ -14,9 +11,14 @@ class WebServ {
 		WebServ(void);
 		~WebServ(void);
 
-		const std::vector<uint16_t>& getPorts(void) const;
+		uint16_t getPort(void) const { return this->port; };
 
-		void parseConfigFile(std::string file);
+		void setPort(uint16_t port) { this->port = port; }
+
+		void addParam(const std::string& param, const std::string& value)
+		{ params[param] = value; }
+	
+		void parseConfigFile(const std::string& filename);
 
 		class NoServerTagException : public std::exception {
 			public:
@@ -25,36 +27,9 @@ class WebServ {
 				}
 		};
 
-		class FailedToOpenFile : public std::exception {
-			public:
-				virtual const char* what() const throw() {
-					return "couldn't open the file";
-				}
-		};
-
-		class UnknownTagException : public std::exception {
-			public:
-				virtual const char* what() const throw() {
-					return "unknown keyword";
-				}
-		};
-
-		class KeywordWithoutValueException : public std::exception {
-			public:
-				virtual const char* what() const throw() {
-					return "keyword without value";
-				}
-		};
-
-		class InvalidPortNumberException : public std::exception {
-			public:
-				virtual const char* what() const throw() {
-					return "invalid port number";
-				}
-		};
-
 	private:
-		std::vector<uint16_t> ports;
+		std::map<std::string, std::string> params;
+		uint16_t port;
 		const std::map<int, std::string> error_messages;
 };
 
