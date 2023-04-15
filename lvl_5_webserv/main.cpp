@@ -25,22 +25,17 @@ void printUintVecStorage(const std::vector<unsigned short>& v)
 int main(int argc, char **argv)
 {
 	(void)argc;
-	(void)argv;
     Lexer lexer(argv[1]);
     Token token;
+	std::string last_keyword;
 
     while (true)
 	{
         token = lexer.nextToken();
         switch (token.type) {
-            case UNKNOWN:
-                std::cout << "Error: unexpected character '" << token.value << "' on line " << lexer.line_number << endl;
-                break;
             case KEYWORD:
                 std::cout << "Keyword: " << token.value << std::endl;
-                break;
-            case PARAMETER:
-                std::cout << "Parameter: " << token.value << std::endl;
+                std::cout << "Parameter: " << lexer.parameters[token.value] << std::endl;
                 break;
 			case LEFT_CURLY_BRACKET:
                 std::cout << "LEFT CURLY BRACKET" << std::endl;
