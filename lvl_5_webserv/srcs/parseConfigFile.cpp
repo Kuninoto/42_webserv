@@ -1,4 +1,5 @@
 #include "WebServ.hpp"
+#include "Server.hpp"
 #include "Lexer.hpp"
 #include <stack>
 #include <stdlib.h>
@@ -62,9 +63,13 @@ static bool areBracketsBalanced(const std::vector<Token>& token_vec)
     return false;
 }
 
-static WebServ createServ(Lexer& lexer)
+// iterate thru server scope and assign attributes
+// corresponding to the current keyword on token.value
+// perhaps tokens will also have a state variable that represents
+// whether their inside server scope or inside location scope
+static Server createServ(Lexer& lexer)
 {
-	WebServ	sv;
+	Server	sv;
 	Token 	token;
 
 	if (token.value == "listen")
@@ -77,10 +82,10 @@ static WebServ createServ(Lexer& lexer)
 	return sv;
 }
 
-std::vector<WebServ&> parseConfigFile(std::string filename)
+std::vector<Server&> parseConfigFile(std::string filename)
 {
 	Lexer lexer(filename);
-	std::vector<WebServ&> servers;
+	std::vector<Server&> servers;
     std::vector<Token> tokens;
     std::stack<TokenType> brackets;
 
