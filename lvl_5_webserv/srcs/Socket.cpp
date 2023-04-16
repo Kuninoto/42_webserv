@@ -8,8 +8,7 @@ Socket::Socket(uint16_t port)
 : port(port) {};
 
 Socket::Socket(Socket &copy)
-: socket_fd(copy.socket_fd), port(copy.port)
-{};
+: socket_fd(copy.socket_fd), port(copy.port) {};
 
 Socket::~Socket(void) {};
 
@@ -20,12 +19,4 @@ bool Socket::setSocketFd(void)
 		return false;
 	cout << "Socket's FD = " << this->socket_fd << endl;
 	return true;
-};
-
-uint16_t Socket::getPort(void) const {
-	return this->socket_fd;
-};
-
-int Socket::getSocketFd(void) const {
-	return this->socket_fd;
 };
