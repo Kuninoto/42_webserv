@@ -9,7 +9,7 @@ std::vector<Server> parseConfigFile(std::string filename)
 	Lexer lexer(filename);
 	std::vector<Server> servers;
 
-    // parseServerScope()
+    // Parse Server scopes
     Token token = lexer.nextToken();
     while (token.type != END_OF_FILE)
     {
@@ -17,13 +17,21 @@ std::vector<Server> parseConfigFile(std::string filename)
         while (true)
         {
             if (token.value == "server")
+            {
                 token = lexer.nextToken();
+                if (token.type != LEFT_CURLY_BRACKET)
+                    throw WebServ::ParserException("no opening bracket for server");
+            }
             if (token.type == LEFT_CURLY_BRACKET) {
                 curly_brackets += 1;
             }
             else if (token.type == RIGHT_CURLY_BRACKET) {
                 curly_brackets -= 1;
             }
+            //if (token.value == "location")
+            //{
+            // different behavior    
+            //}
             if (curly_brackets == 0 || token.type == END_OF_FILE)
             {
                 servers.push_back(Server(lexer.parameters));
@@ -36,8 +44,6 @@ std::vector<Server> parseConfigFile(std::string filename)
             throw WebServ::ParserException("Unclosed curly brackets");
         token = lexer.nextToken();
     }
-
-    // loop thru tokens and if keyword == server, call createServ()
 
     for (size_t i = 0; i < servers.size(); i += 1) {
         std::cout << servers.at(i) << std::endl; 
