@@ -2,7 +2,6 @@
 #include "Server.hpp"
 #include "Lexer.hpp"
 #include <stack>
-#include <stdlib.h>
 #include <iostream>
 
 class ParserException : public std::exception {
@@ -16,23 +15,6 @@ class ParserException : public std::exception {
     private:
         const std::string& message;
 };
-
-/**
- * @brief Converts the string representation of the port to its correspondent integer
- * @param port_as_str string representation of the port number
- * @return On success: port number
- * On error: -1 (invalid port number)
- */
-static int parsePortNumber(const std::string& port_as_str)
-{
-	unsigned long temp = strtoul(port_as_str.c_str(), NULL, 10);
-	bool strtoul_success = (temp == UINT64_MAX && errno == ERANGE) ? false : true;
-
-	if (port_as_str.find_first_not_of("0123456789") != std::string::npos 
-	|| !strtoul_success || temp > UINT16_MAX)
-		return -1;
-	return (int)temp;
-}
 
 static bool areBracketsBalanced(const std::vector<Token>& token_vec)
 {
@@ -63,37 +45,43 @@ static bool areBracketsBalanced(const std::vector<Token>& token_vec)
     return false;
 }
 
-// iterate thru server scope and assign attributes
-// corresponding to the current keyword on token.value
-// perhaps tokens will also have a state variable that represents
-// whether their inside server scope or inside location scope
-static Server createServ(Lexer& lexer)
-{
-	Server	sv;
-	Token 	token;
-
-	if (token.value == "listen")
-	{
-		int tempPort = parsePortNumber(lexer.parameters["listen"]);
-		if (tempPort == -1)
-			throw ParserException("Invalid port number");
-		sv.setPort(tempPort);
-	}
-	return sv;
-}
-
-std::vector<Server&> parseConfigFile(std::string filename)
+std::vector<Server> parseConfigFile(std::string filename)
 {
 	Lexer lexer(filename);
-	std::vector<Server&> servers;
+	std::vector<Server> servers;
     std::vector<Token> tokens;
     std::stack<TokenType> brackets;
 
     if (!areBracketsBalanced(tokens))
         throw ParserException("Unclosed curly brackets");
-    for (Token token = lexer.nextToken(); token.type != END_OF_FILE; token = lexer.nextToken()) {
+
+    int curly_brackets = 0;
+
+    // parseServerScope()
+    Token token = lexer.nextToken();
+    while (true)
+    {
+        if (token.value == "server")
+            token = lexer.nextToken();
+        if (token.type == LEFT_CURLY_BRACKET)
+        {
+            token = lexer.nextToken();
+            curly_brackets += 1;
+        }
+        else if (token.type == RIGHT_CURLY_BRACKET)
+        {
+            token = lexer.nextToken();
+            curly_brackets -= 1;
+        }
+        if (curly_brackets == 0 || token.type == END_OF_FILE)
+        {
+            servers.push_back(Server(lexer.parameters));
+            lexer.parameters.clear();
+            break;
+        }
         tokens.push_back(token);
     }
+
     // loop thru tokens and if keyword == server, call createServ()
 
     std::cout << "SERVERS PORTS: ";
