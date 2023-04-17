@@ -14,6 +14,7 @@ class Server {
         const std::string& getHost(void) const { return this->host; };
         const std::string& getIndex(void) const { return this->index; };
         const std::string& getServerName(void) const { return this->serverName; };
+        const std::string& getErrorPagePath(void) const { return this->errorPagePath; };
         const std::string& getRoot(void) const { return this->root; };
         size_t getMaxBodySize(void) const { return this->clientMaxBodySize; };
 
@@ -25,7 +26,7 @@ class Server {
         // 127.0.0.1
         std::string host;
         // 404 pages/error/404.html
-        std::string errorPage;
+        std::string errorPagePath;
         std::string root;
         std::string index;
         size_t clientMaxBodySize;
@@ -33,5 +34,7 @@ class Server {
         std::map<std::string, std::string> parameters;
 
 };
+
+std::ostream &operator<<(std::ostream &stream, Server& sv);
 
 #endif // SERVER_HPP
