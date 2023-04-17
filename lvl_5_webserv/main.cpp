@@ -24,7 +24,8 @@ void printUintVecStorage(const std::vector<unsigned short>& v)
 
 int main(int argc, char **argv)
 {
-	std::vector<WebServ&> servers = parseConfigFile(argv[1]);
+	(void)argc;
+	std::vector<Server> servers = parseConfigFile(argv[1]);
 
     return EXIT_SUCCESS;
 }

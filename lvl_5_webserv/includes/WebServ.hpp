@@ -16,11 +16,16 @@ class WebServ {
 	
 		void parseConfigFile(const std::string& filename);
 
-		class NoServerTagException : public std::exception {
-			public:
-				virtual const char* what() const throw() {
-					return "no server keyword";
-				}
+		class ParserException : public std::exception {
+    		public:
+        		ParserException(const std::string& message) : message(message) {};
+    
+    		virtual const char* what() const throw() {
+        		return message.c_str();
+    		};
+
+    		private:
+        	const std::string& message;
 		};
 
 	private:

@@ -4,14 +4,14 @@
 
 bool isValidKeyword(const std::string& value)
 {
-    std::string keywords[8] = {"server", "listen", "index", 
-                               "server_name", "root", "cgi",
-                               "error_page", "location"};
+    static const std::string keywords[] = {"server", "listen", "host", "index", 
+                                           "server_name", "root", "error_page",
+                                           "location", "client_max_body_size", "cgi"};
 
-    return (value == keywords[0] || value == keywords[1]
-        ||  value == keywords[2] || value == keywords[3]
-        ||  value == keywords[4] || value == keywords[5]
-        ||  value == keywords[6] || value == keywords[7]);
+    return (value == keywords[0] || value == keywords[1] || value == keywords[2]
+            || value == keywords[3] || value == keywords[4] || value == keywords[5]
+            || value == keywords[6] || value == keywords[7] || value == keywords[8]
+            || value == keywords[9]);
 }
 
 Lexer::Lexer(const std::string& filename)
