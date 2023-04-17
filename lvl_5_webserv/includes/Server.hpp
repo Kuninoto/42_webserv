@@ -3,7 +3,19 @@
 
 # include <stdint.h>
 # include <string>
+# include <vector>
 # include <map>
+
+typedef struct location_s {
+    std::string index;
+    std::string root;
+    std::vector<std::string> allowed_methods;
+    std::string redirect;
+    bool auto_index;
+    std::string cgi_path;
+    std::string cgi_ext;
+}               location_t;
+
 
 class Server {
     public:
@@ -16,6 +28,7 @@ class Server {
         const std::string& getServerName(void) const { return this->serverName; };
         const std::string& getErrorPagePath(void) const { return this->errorPagePath; };
         const std::string& getRoot(void) const { return this->root; };
+        const std::string& getLocationRoot(const std::string& key) { return this->locations[key].root; };
         size_t getMaxBodySize(void) const { return this->clientMaxBodySize; };
 
     private:
@@ -30,9 +43,7 @@ class Server {
         std::string root;
         std::string index;
         size_t clientMaxBodySize;
-
-        std::map<std::string, std::string> parameters;
-
+        std::map<std::string, location_t> locations;
 };
 
 std::ostream &operator<<(std::ostream &stream, Server& sv);
