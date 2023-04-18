@@ -12,18 +12,19 @@ using std::endl;
 
 bool g_stopServer = false;
 
-void printUintVecStorage(const std::vector<unsigned short>& v)
+/* void printUintVecStorage(const std::vector<unsigned short>& v)
 {
     std::vector<unsigned short>::const_iterator itr;
 
-    std::cout << "vec = ";
     for (itr = v.begin(); itr != v.end(); itr++)
         std::cout << "\"" << *itr << "\"";
     std::cout << std::endl;
-}
+} */
 
 int main(int argc, char **argv)
 {
+	system("clear");
+
 	if (argc != 2 || !argv[1][0])
 		return panic(ARGS_ERR);
 
@@ -41,12 +42,10 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	cout << "WEB SERVER" << endl;
-	cout << "Ports: ";
-	printUintVecStorage(server.getPorts());
+	// printUintVecStorage(server.getPorts());
 
-	int opt = 0;
-	if (setsockopt(socket.getSocketFd(), SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(int)) < 0)
+	int opt = 1;
+	if (setsockopt(socket.getSocketFd(), SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(int)) < 0)
 		return panic(SETSOCKETOPT_ERR);
 
 	struct sockaddr_in address;
@@ -59,7 +58,10 @@ int main(int argc, char **argv)
 
 	cout << "Trying to bind..." << endl;
 	if (bind(socket.getSocketFd(), (struct sockaddr *)&address, sizeof(address)) == -1)
+	{
+		cout << errno << endl;
 		return panic(BINDING_ERR);
+	}
 	cout << "Binding successful" << endl;
 
 	//std::string server_name("olaamigos");
@@ -94,13 +96,8 @@ int main(int argc, char **argv)
 		num = open_fds;
 		if (poll(pollfds, num, -1) == -1)
 		{
-			free(pollfds);
-			shutdown(socket.getSocketFd(), SHUT_RDWR);
-			close(socket.getSocketFd());
 			if (!g_stopServer)
-				return panic(POLL_FAIL);
-			else
-				return 0;
+				return panic(POLL_FAIL); // change this
 		}
 
 		for (size_t i = 0; i < open_fds; i += 1)
@@ -114,15 +111,17 @@ int main(int argc, char **argv)
 				{
 					if (open_fds == max_fds)
 					{
-						cout << "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaA" << endl;
 						pollfds = (struct pollfd *)realloc(pollfds, sizeof(struct pollfd) * (open_fds + 1));
 						max_fds += 1;
 					}
 					open_fds += 1;
 
 					//TODO accept to inside constructor amd get it with getFd to save in pollfds[...].fd, also throw inside if error and catch here
-					pollfds[open_fds - 1].fd = accept(socket.getSocketFd(), (struct sockaddr *)&address, (socklen_t *)&addrlen); // == -1 -> erro
-					clients.push_back(Client((int)pollfds[open_fds - 1].fd));
+					int temp = accept(socket.getSocketFd(), (struct sockaddr *)&address, (socklen_t *)&addrlen);
+					if (temp < 0)
+						throw;
+					pollfds[open_fds - 1].fd = temp; 
+					clients.push_back(Client(server, temp));
 					// -------
 
 					pollfds[open_fds - 1].events = POLLIN | POLLOUT;
@@ -131,7 +130,7 @@ int main(int argc, char **argv)
 				}
 				else
 				{
-					if (recv(pollfds[i].fd, buffer, 1023, 0) > 0)
+					if (recv(pollfds[i].fd, buffer, 1023, 0) >= 0)
 					{
 						buffer[1023] = '\0';
 						clients.at(i - 1).setRequest(std::string(buffer));
@@ -154,9 +153,13 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-
+	
+	for (size_t i = 0; i < open_fds; i++)
+	{
+		close(pollfds[i].fd);
+		shutdown(pollfds[i].fd, 0);
+	}
 	free(pollfds);
-	shutdown(socket.getSocketFd(), SHUT_RDWR);
-	close(socket.getSocketFd());
+	messageLog("Server closed", GREEN, false);
 	return EXIT_SUCCESS;
 }
