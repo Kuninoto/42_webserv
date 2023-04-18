@@ -1,4 +1,4 @@
-#ifndef SOCKET_HPP
+#ifndef SOCKET_HPP 
 # define SOCKET_HPP
 
 # define SOCKET_OPEN_ERR "fatal: failed to open socket"
@@ -7,6 +7,8 @@
 
 # include <stdint.h>
 # include <sys/socket.h>
+# include <unistd.h>
+# include <iostream>
 
 class Socket {
 	public:

@@ -13,7 +13,7 @@ extern bool g_stopServer;
 static void closeServer(int signum)
 {
 	(void) signum;
-	std::cout << "\n\nClosing server..." << std::endl;
+	messageLog("Closing server", YELLOW, false);
 	g_stopServer = true;
 }
 

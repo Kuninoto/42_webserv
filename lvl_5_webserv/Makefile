@@ -4,7 +4,7 @@ INCLUDE = -I./includes
 VPATH = srcs srcs/utils
 RM = rm -rf
 
-UTILS = splitStr sliceVec getTimeStamp
+UTILS = splitStr sliceVec time file
 GENERAL = Socket WebServ Client
 
 NAME = webserv
