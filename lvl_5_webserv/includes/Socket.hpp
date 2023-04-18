@@ -18,9 +18,8 @@ class Socket {
 
 		bool setSocketFd(void);
 
-		uint16_t getPort(void) const;
-		int getSocketFd(void) const;
-		int getOpt(void) const;
+		uint16_t getPort(void) const { return this->port; };
+		int getSocketFd(void) const { return this->socket_fd; };;
 
 	private:
 		int	socket_fd;

@@ -12,6 +12,7 @@
 # define PURPLE "\x1B[35m"
 
 std::vector<std::string> splitStr(const std::string& s, char delimiter);
+void trimStr(std::string& str, const char *set);
 
 template <typename T>
 std::vector<T> sliceVec(std::vector<T>& vec, unsigned int start_idx, unsigned int end_idx);
