@@ -42,3 +42,8 @@ std::string getHeader(std::string file)
 {
     return "HTTP/1.1 200 OK\nContent-Type: " + getFileType(file) + "; charset=UTC-8\nContent-Length: " + getFileSize(file) +"\n\n";
 }
+
+std::string getErrorHeader(std::string file)
+{
+    return "HTTP/1.1 400 Not Found\nContent-Type: " + getFileType(file) + "; charset=UTC-8\nContent-Length: " + getFileSize(file) +"\n\n";
+}

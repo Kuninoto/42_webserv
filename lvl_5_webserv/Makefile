@@ -5,7 +5,7 @@ VPATH = srcs srcs/utils
 RM = rm -rf
 
 UTILS = splitStr sliceVec time file
-GENERAL = Lexer Socket WebServ Client Server parseConfigFile
+GENERAL = Lexer WebServ Client Server parseConfigFile
 
 NAME = webserv
 TEST_CONFIG_FILE = config/inception.conf
