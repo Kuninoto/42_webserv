@@ -1,6 +1,0 @@
-# identation must be done with spaces
-
-# root /nfs/homes/nnuno-ca/Desktop/webserv
-
-# location / {
-# }

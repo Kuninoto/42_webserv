@@ -12,7 +12,8 @@
 # include <vector>
 
 # include "utils.hpp"
-# include "Socket.hpp"
+# include "Lexer.hpp"
+# include "Server.hpp"
 # include "WebServ.hpp"
 # include "Client.hpp"
 
@@ -31,5 +32,7 @@ static inline int panic(const std::string &error_msg)
     std::cerr << ERROR_MSG_PREFFIX << error_msg << std::endl;
     return EXIT_FAILURE;
 }
+
+std::vector<Server> parseConfigFile(std::string filename);
 
 #endif // LIBWEBSERV_HPP

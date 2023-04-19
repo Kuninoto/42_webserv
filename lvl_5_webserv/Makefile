@@ -4,8 +4,8 @@ INCLUDE = -I./includes
 VPATH = srcs srcs/utils
 RM = rm -rf
 
-UTILS = splitStr sliceVec getTimeStamp
-GENERAL = Socket WebServ Client
+UTILS = splitStr sliceVec time file
+GENERAL = Lexer WebServ Client Server parseConfigFile
 
 NAME = webserv
 TEST_CONFIG_FILE = config/inception.conf
