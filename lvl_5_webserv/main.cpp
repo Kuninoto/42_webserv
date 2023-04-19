@@ -12,15 +12,6 @@ using std::endl;
 
 bool g_stopServer = false;
 
-/* void printUintVecStorage(const std::vector<unsigned short>& v)
-{
-    std::vector<unsigned short>::const_iterator itr;
-
-    for (itr = v.begin(); itr != v.end(); itr++)
-        std::cout << "\"" << *itr << "\"";
-    std::cout << std::endl;
-} */
-
 void configureServers(std::vector<Server> &servers, struct pollfd **pollfds)
 {
 	std::vector<Server>::iterator server;
@@ -74,6 +65,7 @@ int main(int argc, char **argv)
 	std::vector<Client> clients;
 	struct pollfd *pollfds = NULL;
 
+	//TODO Parse the config file
 	try {
 		servers = parseConfigFile(argv[1]);
 		configureServers(servers, &pollfds);
