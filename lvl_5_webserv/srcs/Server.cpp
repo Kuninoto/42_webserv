@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <sstream>
+#include <fstream>
 #include "Server.hpp"
 #include "WebServ.hpp"
 
@@ -22,7 +23,7 @@ static size_t parseClientMaxBodySize(const std::string& str)
  * @return On success: port number
  * On error: -1 (invalid port number)
  */
-static uint16_t parsePortNumber(const std::string& port_as_str)
+static std::string parsePortNumber(const std::string& port_as_str)
 {
 	unsigned long temp = strtoul(port_as_str.c_str(), NULL, 10);
 	bool strtoul_success = (temp == UINT64_MAX && errno == ERANGE) ? false : true;
@@ -30,7 +31,7 @@ static uint16_t parsePortNumber(const std::string& port_as_str)
 	if (port_as_str.find_first_not_of("0123456789") != std::string::npos 
 	|| !strtoul_success || temp > UINT16_MAX)
 		throw WebServ::ParserException("invalid port number");
-	return temp;
+	return port_as_str;
 }
 
 Server::Server(std::map<std::string, std::string>& parameters)
@@ -61,6 +62,26 @@ Server::Server(std::map<std::string, std::string>& parameters)
     this->root = parameters["root"];
     this->index = parameters["index"];
     this->clientMaxBodySize = parseClientMaxBodySize(parameters["client_max_body_size"]);
+
+    // this->createErrorResponse();
+}
+
+/* void Server::createErrorResponse()
+{
+
+    //TODO 404 exists or throw
+    this->error_response = getErrorHeader(parameters["root"] + parameters["error_page"].erase(0, 1));
+    std::ifstream file(parameters["error_page"].erase(0, 1).c_str(), std::ios::binary | std::ios::in);
+    this->error_response.append((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    std::cout << "tye" << this->error_response << std::endl;
+
+} */
+
+void Server::createSocket(void)
+{
+    this->socket_fd = socket(AF_INET, SOCK_STREAM, 0);
+	if (this->socket_fd == -1)
+		throw std::out_of_range(SOCKET_OPEN_ERR);
 }
 
 std::ostream &operator<<(std::ostream &stream, Server& sv)

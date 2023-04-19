@@ -21,6 +21,7 @@ const std::string getTimeStamp(void);
 const std::string getTime(void);
 
 std::string getHeader(std::string header);
+std::string getErrorHeader(std::string file);
 
 static inline void messageLog(std::string message, std::string color, bool error)
 {

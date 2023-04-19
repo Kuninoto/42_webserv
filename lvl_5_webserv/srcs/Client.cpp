@@ -1,7 +1,7 @@
-#include "Client.hpp"
-#include <sstream>
+# include "Client.hpp"
+# include <sstream>
 
-Client::Client(WebServ server, int fd): server(server), fd(fd), request_sent(false){}
+Client::Client(Server server, int fd): server(server), fd(fd), request_sent(false){}
 
 void Client::setRequest(std::string request)
 {
@@ -42,7 +42,7 @@ void Client::parseRequest()
 // get the path to file, this will be usefull when join root + index + path
 std::string Client::getPathToPage()
 {
-    return page.erase(0, 1);
+    return server.getRoot() + page.erase(0, 1);
 }
 
 /* void Client::responseFavIcon()
@@ -53,7 +53,7 @@ std::string Client::getPathToPage()
 
     std::string header("HTTP/1.1 200 OK\r\nContent-Type: image/png\r\nContent-Length: 85405\r\n\r\n");
     header.append("Content-Type: image/" + getExtension("folhas.png") + "\r\n");
-
+2
     std::string img_as_binary((std::istreambuf_iterator<char>(img_file)), std::istreambuf_iterator<char>());
     write(this->fd , header.c_str() , header.length());
     write(this->fd , img_as_binary.c_str(), img_as_binary.length());
@@ -81,10 +81,13 @@ void Client::response()
 
     if (!file.is_open())
     {
-        std::ifstream file("pages/error/404.html", std::ios::binary | std::ios::in);
-        std::string hello((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());	
+        std::string a = server.getErrorPagePath();
+        std::string b = a.erase(0, 1);
+        std::string header(getErrorHeader(b));
+        std::ifstream file(b.c_str(), std::ios::binary | std::ios::in);
+        header.append((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());	
 
-        write(this->fd , hello.c_str() , hello.length());
+        write(this->fd , header.c_str() , header.length());
         request.clear();
         return ;
     }
@@ -92,7 +95,7 @@ void Client::response()
     std::string header(getHeader(path_to_file));
 
     // std::string header("HTTP/ 1.1 200 OK\n");
-    // header.append("Content-Type: " + getFileType(path_to_file) + "/" + getFileExtension(path_to_file) + "; charset=UTC-8\n");
+    // header.append("Content-Type: " + getFileType(path_to_file) + "/" + 2getFileExtension(path_to_file) + "; charset=UTC-8\n");
     // header.append("Content-Length: " + getFileSize(path_to_file) + "\n");
 
 

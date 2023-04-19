@@ -5,6 +5,11 @@
 # include <string>
 # include <vector>
 # include <map>
+# include <sys/socket.h>
+# include <sstream>
+
+# define SOCKET_OPEN_ERR "fatal: failed to open socket"
+# define SETSOCKETOPT_ERR "fatal: settockopt() failed"
 
 typedef struct location_s {
     std::string index;
@@ -22,18 +27,22 @@ class Server {
         Server(std::map<std::string, std::string>& parameters);
 		~Server(void) {};
 
-        uint16_t getPort(void) const { return this->port; };
+        const std::string& getPort(void) const { return this->port; };
         const std::string& getHost(void) const { return this->host; };
         const std::string& getIndex(void) const { return this->index; };
         const std::string& getServerName(void) const { return this->serverName; };
         const std::string& getErrorPagePath(void) const { return this->errorPagePath; };
         const std::string& getRoot(void) const { return this->root; };
         const std::string& getLocationRoot(const std::string& key) { return this->locations[key].root; };
+        std::string getErrorResponse(void){ return this->error_response; };
         size_t getMaxBodySize(void) const { return this->clientMaxBodySize; };
+		int getSocketFd(void) const { return this->socket_fd; };
+
+		void createSocket(void);
 
     private:
         // 8080
-        uint16_t port;
+        std::string port;
         // localhost
         std::string serverName;
         // 127.0.0.1
@@ -44,6 +53,12 @@ class Server {
         std::string index;
         size_t clientMaxBodySize;
         std::map<std::string, location_t> locations;
+
+        std::string error_response;
+
+		int	socket_fd;
+
+        void createErrorResponse();
 };
 
 std::ostream &operator<<(std::ostream &stream, Server& sv);

@@ -7,7 +7,7 @@
 #include <cstring>
 
 #include "utils.hpp"
-#include "WebServ.hpp"
+#include "Server.hpp"
 
 #define REQUEST_DELIMITER "\r\n\r\n"
 
@@ -28,7 +28,7 @@ typedef enum types
 
 class Client {
     public:
-        Client(WebServ server, int fd);
+        Client(Server server, int fd);
 
         e_methods getMethod(void) const { return this->method; };
 
@@ -37,7 +37,7 @@ class Client {
         void response();
 
     private:
-        WebServ server;
+        Server server;
 
         int fd;
         bool request_sent;
