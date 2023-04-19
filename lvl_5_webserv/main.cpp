@@ -12,27 +12,24 @@ using std::endl;
 
 bool g_stopServer = false;
 
-void printUintVecStorage(const std::vector<unsigned short>& v)
-{
-    std::vector<unsigned short>::const_iterator itr;
+// void printUintVecStorage(const std::vector<unsigned short>& v)
+// {
+//     std::vector<unsigned short>::const_iterator itr;
 
-    std::cout << "vec = ";
-    for (itr = v.begin(); itr != v.end(); itr++)
-        std::cout << "\"" << *itr << "\"";
-    std::cout << std::endl;
-}
+//     std::cout << "vec = ";
+//     for (itr = v.begin(); itr != v.end(); itr++)
+//         std::cout << "\"" << *itr << "\"";
+//     std::cout << std::endl;
+// }
 
 int main(int argc, char **argv)
 {
 	if (argc != 2 || !argv[1][0])
 		return panic(ARGS_ERR);
 
-	Socket socket(PORT);
-	if (!socket.setSocketFd())
-		return panic(SOCKET_OPEN_ERR);
-
 	WebServ server;
 
+	//TODO Parse the config file
 	try {
 		server.parseConfigFile(argv[1]);
 	}
@@ -41,9 +38,14 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
+	//TODO change socket to receive port from the parsing
+	Socket socket(PORT);
+	if (!socket.setSocketFd())
+		return panic(SOCKET_OPEN_ERR);
+
 	cout << "WEB SERVER" << endl;
 	cout << "Ports: ";
-	printUintVecStorage(server.getPorts());
+	// printUintVecStorage(server.getPorts());
 
 	int opt = 0;
 	if (setsockopt(socket.getSocketFd(), SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(int)) < 0)
