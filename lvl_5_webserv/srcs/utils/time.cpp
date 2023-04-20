@@ -1,5 +1,7 @@
-#include "utils.hpp"
 #include <ctime>
+#include <sys/stat.h>
+#include <string>
+#include <iostream>
 
 const std::string getTimeStamp(void)
 {
@@ -19,6 +21,5 @@ const std::string getTime(void)
     char buffer[9];
 
     strftime(buffer, 9, "%H:%M:%S", tm_time);
-
     return std::string(buffer);
 }
