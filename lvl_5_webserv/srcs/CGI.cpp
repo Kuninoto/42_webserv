@@ -1,5 +1,6 @@
 #include "CGI.hpp"
 #include <iostream>
+#include <sstream>
 
 using std::cout;
 using std::cerr;
@@ -28,7 +29,7 @@ bool CGI::isDirectory(const char *path)
 	return false;
 }
 
-void CGI::handleDirectoryListing(const std::string& path)c
+void CGI::handleDirectoryListing(const std::string& path)
 {
 	// Generate directory listing HTML
 	std::string html = "<html><head><title>Index of " + path + "</title></head><body>\n";
@@ -51,9 +52,14 @@ void CGI::handleDirectoryListing(const std::string& path)c
 		}
 
 		std::string modified = getTimeStamp();
-		uintmax_t	size = isRegularFile(full_path.c_str()) ? st.st_size : 0;
+		uint64_t	toConvSize = isRegularFile(full_path.c_str()) ? st.st_size : 0;
 
-		html += "<tr><td><a href=\"" + name + "\">" + name + "</a></td><td>" + modified + "</td><td>" + std::to_string(size) + "</td></tr>\n";
+		std::stringstream ss;
+		ss << toConvSize;
+		std::string size = ss.str();
+
+
+		html += "<tr><td><a href=\"" + name + "\">" + name + "</a></td><td>" + modified + "</td><td>" + size + "</td></tr>\n";
 		html += "</table>\n";
 		html += "</body></html>\n";
 
@@ -90,7 +96,7 @@ void	CGI::dirListing(std::string requestedPath)
 			handleDirectoryListing(requestedPath);
 		else
 			// send 403 Forbidden response
-			string response = "HTTP/1.1 403 Forbidden\r\n\r\n";
+			std::string response = "HTTP/1.1 403 Forbidden\r\n\r\n";
 	}
 	else if (isRegularFile(requestedPath.c_str()))
 	{
