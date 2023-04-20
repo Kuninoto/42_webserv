@@ -9,7 +9,6 @@
 # include <vector>
 # include <map>
 # include <dirent.h>
-# include <ctime>
 
 # include "TcpConnection.hpp"
 # include "utils.hpp"
@@ -17,22 +16,21 @@
 class CGI {
 
 	private:
-		std::map<std::string, std::vector<std::string> >	routeMethods;
-		std::map<std::string, std::string>			routePaths;
-		bool 						directoryListingEnabled;
-		std::string 						defaultFileName = "index.html";
+		std::map<std::string, std::vector<std::string> > routeMethods;
+		std::map<std::string, std::string> routePaths;
+		bool directoryListingEnabled;
+		std::string defaultFileName = "index.html";
 
 
 	public:
-		CGI() {};
-		~CGI() {};
+		CGI(void) {};
+		~CGI(void) {};
 
-		std::string	formatTime(time_t mod_time);
-		bool		isRegularFile(const char *path);
-		void		dirListing(std::string requestedPath);
-		void		handle_directory_listing(TcpConnection& connection, const std::string& path);
-		bool		isDirectory(const std::string& path);
+		bool isRegularFile(const char *path);
+		void dirListing(std::string requestedPath);
+		void handleDirectoryListing(const std::string& path);
+		bool isDirectory(const char *path);
 
 };
 
-#endif
+#endif // CGI_HPP

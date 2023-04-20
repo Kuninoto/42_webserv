@@ -5,22 +5,6 @@ using std::cout;
 using std::cerr;
 using std::endl;
 
-CGI::CGI()
-{
-	routeMethods["/general"] = std::vector<std::string>("GET", "POST", "DELETE");
-	routeMethods["/pages"] = {"GET", "POST"};
-
-	routePaths["/pages"] = "/home/Flirt/Desktop/Projects_42/Webserver/lvl_5_webserv/pages/";
-	routePaths["/."] = "/home/Flirt/Desktop/Projects_42/Webserver/lvl_5_webserv/";
-}
-
-std::string formatTime(time_t mod_time)
-{
-	char buf[80];
-	std::strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", std::localtime(&mod_time));
-	return std::string(buf);
-}
-
 bool CGI::isRegularFile(const char *path)
 {
 	struct stat st;
@@ -30,33 +14,22 @@ bool CGI::isRegularFile(const char *path)
 	return S_ISREG(st.st_mode);
 }
 
-bool CGI::isDirectory(const std::string& path)
+
+bool CGI::isDirectory(const char *path)
 {
-	if (access(path.c_str(), F_OK) != 0) {
+	if (access(path, F_OK) != 0) {
 		return false;  // path does not exist
 	}
 
 	struct stat fileStat;
-	if (stat(path.c_str(), &fileStat) == 0) {
+	if (stat(path, &fileStat) == 0) {
 		return S_ISDIR(fileStat.st_mode);
 	}
 	return false;
 }
 
-void CGI::handle_directory_listing(TcpConnection& connection, const std::string& path)
+void CGI::handleDirectoryListing(const std::string& path)c
 {
-	// Check if directory listing is allowed
-	if (!directoryListingEnabled) {
-		//! throw(HTTP_STATUS_FORBIDDEN);
-		return;
-	}
-
-	// Check if path is a directory
-	if (!isDirectory(path)) {
-		//! throw(HTTP_STATUS_NOT_FOUND);
-		return;
-	}
-
 	// Generate directory listing HTML
 	std::string html = "<html><head><title>Index of " + path + "</title></head><body>\n";
 	html += "<h1>Index of " + path + "</h1>\n";
@@ -77,15 +50,14 @@ void CGI::handle_directory_listing(TcpConnection& connection, const std::string&
 			continue;
 		}
 
-		std::string modified = formatTime(st.st_mtime);
+		std::string modified = getTimeStamp();
 		uintmax_t	size = isRegularFile(full_path.c_str()) ? st.st_size : 0;
 
 		html += "<tr><td><a href=\"" + name + "\">" + name + "</a></td><td>" + modified + "</td><td>" + std::to_string(size) + "</td></tr>\n";
-
-		closedir(dir);
-
 		html += "</table>\n";
 		html += "</body></html>\n";
+
+		closedir(dir);
 
 		// Send response
 		// TODO create response class
@@ -102,39 +74,39 @@ void	CGI::dirListing(std::string requestedPath)
 {
 	directoryListingEnabled = true;
 
-	std::string requestedPath = "/home/Flirt/Desktop/Projects_42/Webserver/lvl_5_webserv";
+	// string requestedPath = "/home/Flirt/Desktop/Projects_42/Webserver/lvl_5_webserv";
 	struct stat fileStat;
 	if (stat(requestedPath.c_str(), &fileStat) < 0) {
 		// file does not exist
 		cout << "File does not exist" << endl;
 		// ! throw
 	}
-	if (S_ISDIR(fileStat.st_mode))
+
+	if (isDirectory(requestedPath.c_str()))
 	{
 		// requested path is a directory
 		if (directoryListingEnabled)
-		{
 			// send directory listing HTML response
-			std::string defaultFilePath = requestedPath + "/" + defaultFileName;
-			if (access(defaultFilePath.c_str(), F_OK) == 0)
-			{
-			// requested path is a directory
-				// default file exists, serve it
-				// ...
-			}
-			else
-				cout << "couldn't find " << defaultFilePath << endl;
-				//! throw
-		}
+			handleDirectoryListing(requestedPath);
 		else
-		{
 			// send 403 Forbidden response
-			std::string response = "HTTP/1.1 403 Forbidden\r\n\r\n";
-		}
+			string response = "HTTP/1.1 403 Forbidden\r\n\r\n";
+	}
+	else if (isRegularFile(requestedPath.c_str()))
+	{
+		// requested path is a file
+		cout << "It's a file! :)" << endl;
+		// ...
 	}
 	else
 	{
-		// requested path is a file
-		// ...
+		// Check if path is a directory
+		if (!isDirectory(requestedPath.c_str())) {
+			//! throw(HTTP_STATUS_NOT_FOUND);
+			return;
+		}
+		// requested path doesn't exist
+		cout << "requested path doesn't exist" << endl;
+		//! throw
 	}
 }
