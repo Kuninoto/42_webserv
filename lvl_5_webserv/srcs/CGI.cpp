@@ -1,7 +1,13 @@
-#include "../includes/CGI.hpp"
+#include "CGI.hpp"
+#include <iostream>
 
-CGI::CGI() {
-	routeMethods["/general"] = {"GET", "POST", "DELETE"};
+using std::cout;
+using std::cerr;
+using std::endl;
+
+CGI::CGI()
+{
+	routeMethods["/general"] = std::vector<std::string>("GET", "POST", "DELETE");
 	routeMethods["/pages"] = {"GET", "POST"};
 
 	routePaths["/pages"] = "/home/Flirt/Desktop/Projects_42/Webserver/lvl_5_webserv/pages/";
@@ -15,7 +21,6 @@ std::string formatTime(time_t mod_time)
 	return std::string(buf);
 }
 
-
 bool CGI::isRegularFile(const char *path)
 {
 	struct stat st;
@@ -25,17 +30,14 @@ bool CGI::isRegularFile(const char *path)
 	return S_ISREG(st.st_mode);
 }
 
-
 bool CGI::isDirectory(const std::string& path)
 {
-	if (access(path.c_str(), F_OK) != 0)
-	{
+	if (access(path.c_str(), F_OK) != 0) {
 		return false;  // path does not exist
 	}
 
 	struct stat fileStat;
-	if (stat(path.c_str(), &fileStat) == 0)
-	{
+	if (stat(path.c_str(), &fileStat) == 0) {
 		return S_ISDIR(fileStat.st_mode);
 	}
 	return false;
@@ -61,13 +63,13 @@ void CGI::handle_directory_listing(TcpConnection& connection, const std::string&
 	html += "<table>\n";
 	html += "<tr><th>Name</th><th>Last Modified</th><th>Size</th></tr>\n";
 
-	DIR*			dir = opendir(path.c_str());
-	struct dirent*	entry;
+	DIR* dir = opendir(path.c_str());
+	struct dirent* entry;
 
 	while ((entry = readdir(dir)) != NULL)
 	{
-		string name = entry->d_name;
-		string full_path = path + "/" + name;
+		std::string name = entry->d_name;
+		std::string full_path = path + "/" + name;
 		struct stat st;
 
 		if (stat(full_path.c_str(), &st) == -1)
@@ -75,8 +77,8 @@ void CGI::handle_directory_listing(TcpConnection& connection, const std::string&
 			continue;
 		}
 
-		string			modified = formatTime(st.st_mtime);
-		uintmax_t		size = isRegularFile(full_path.c_str()) ? st.st_size : 0;
+		std::string modified = formatTime(st.st_mtime);
+		uintmax_t	size = isRegularFile(full_path.c_str()) ? st.st_size : 0;
 
 		html += "<tr><td><a href=\"" + name + "\">" + name + "</a></td><td>" + modified + "</td><td>" + std::to_string(size) + "</td></tr>\n";
 
@@ -96,11 +98,11 @@ void CGI::handle_directory_listing(TcpConnection& connection, const std::string&
 	}
 }
 
-void	CGI::dirListing(string requestedPath)
+void	CGI::dirListing(std::string requestedPath)
 {
 	directoryListingEnabled = true;
 
-	string requestedPath = "/home/Flirt/Desktop/Projects_42/Webserver/lvl_5_webserv";
+	std::string requestedPath = "/home/Flirt/Desktop/Projects_42/Webserver/lvl_5_webserv";
 	struct stat fileStat;
 	if (stat(requestedPath.c_str(), &fileStat) < 0) {
 		// file does not exist
@@ -113,7 +115,7 @@ void	CGI::dirListing(string requestedPath)
 		if (directoryListingEnabled)
 		{
 			// send directory listing HTML response
-			string defaultFilePath = requestedPath + "/" + defaultFileName;
+			std::string defaultFilePath = requestedPath + "/" + defaultFileName;
 			if (access(defaultFilePath.c_str(), F_OK) == 0)
 			{
 			// requested path is a directory
@@ -127,7 +129,7 @@ void	CGI::dirListing(string requestedPath)
 		else
 		{
 			// send 403 Forbidden response
-			string response = "HTTP/1.1 403 Forbidden\r\n\r\n";
+			std::string response = "HTTP/1.1 403 Forbidden\r\n\r\n";
 		}
 	}
 	else
@@ -135,23 +137,4 @@ void	CGI::dirListing(string requestedPath)
 		// requested path is a file
 		// ...
 	}
-}
-
-int main()
-{
-	string redirectUrl = "http://localhost/new";
-
-	CGI test;
-
-	test.dirListing("/home/Flirt/Desktop/Projects_42/Webserver/lvl_5_webserv");
-
-	//* testing response
-	string response;
-	response += "HTTP/1.1 301 Moved Permanently\r\n";
-	response += "Location: ";
-	response += redirectUrl;
-	response += "\r\n\r\n";
-
-	cout << response << endl;
-
 }

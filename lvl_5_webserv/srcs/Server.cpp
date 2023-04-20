@@ -47,7 +47,7 @@ Server::Server(std::map<std::string, std::string>& parameters)
 
     for (size_t i = 0; i < 6; i += 1) {
         if (parameters.count(mustHaveKeyWords[i]) == 0)
-            throw WebServ::ParserException("no provided value for " + mustHaveKeyWords[i]);
+            throw WebServ::ParserException("No provided value for " + mustHaveKeyWords[i]);
     }
 
     this->port = parsePortNumber(parameters["listen"]);
@@ -55,7 +55,10 @@ Server::Server(std::map<std::string, std::string>& parameters)
     this->host = parameters["host"];
 
     std::string& temp = parameters["error_page"];
-    if (!access(temp.c_str(), F_OK|R_OK))
+    std::cout << "\"" << temp.c_str() << "\"" << std::endl;
+
+    // RELATIVE TO ROOT
+    if (access(temp.c_str(), R_OK) != 0)
         throw WebServ::ParserException("invalid error_page");
 
     this->errorPagePath = temp;
@@ -77,6 +80,10 @@ Server::Server(std::map<std::string, std::string>& parameters)
 
 } */
 
+void Server::addLocation(std::pair<std::string, location_t> newLocationPair) {
+    this->locations.insert(newLocationPair);
+}
+
 void Server::createSocket(void)
 {
     this->socket_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -92,6 +99,21 @@ std::ostream &operator<<(std::ostream &stream, Server& sv)
            << "ERROR_PAGE = " << sv.getErrorPagePath() << '\n'
            << "ROOT = " << sv.getRoot() << '\n'
            << "INDEX = " << sv.getIndex() << '\n'
-           << "CLIENT_MAX_BODY_SIZE = " << sv.getMaxBodySize() << std::endl;
+           << "CLIENT_MAX_BODY_SIZE = " << sv.getMaxBodySize() << '\n'
+           << "LOCATIONS --------------" << '\n';
+
+    std::map<std::string, location_t>::iterator itr;
+    for (itr = sv.locations.begin(); itr != sv.locations.end(); itr++)
+    {
+        stream << '\n' << "location " << itr->first << '\n'
+               << "root = " << itr->second.root << '\n'
+               << "ALLOW_METHODS = ";
+        for (size_t i = 0; i < itr->second.allowed_methods.size(); i++)
+            stream << "\"" << itr->second.allowed_methods.at(i) << "\" ";
+        stream << '\n' << "AUTO_INDEX = " << itr->second.auto_index << '\n'
+               << "RETURN = " << itr->second.redirect << '\n'
+               << "CGI_PATH = " << itr->second.cgi_path << '\n'
+               << "CGI_EXT = " << itr->second.cgi_ext << '\n';
+    }
 	return stream;
 }

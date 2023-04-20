@@ -2,16 +2,22 @@
 #include <sstream>
 #include "Lexer.hpp"
 
+#include <iostream>
+
 bool isValidKeyword(const std::string& value)
 {
-    static const std::string keywords[] = {"server", "listen", "host", "index", 
+    static const std::string keywords[15] = {"server", "listen", "host", "index", 
                                            "server_name", "root", "error_page",
-                                           "location", "client_max_body_size", "cgi"};
+                                           "location", "client_max_body_size",
+                                           "cgi_path", "cgi_ext", "auto_index",
+                                           "allow_methods", "return"};
 
-    return (value == keywords[0]  || value == keywords[1] || value == keywords[2]
-          || value == keywords[3] || value == keywords[4] || value == keywords[5]
-          || value == keywords[6] || value == keywords[7] || value == keywords[8]
-          || value == keywords[9]);
+    for (size_t i = 0; i < 14; i += 1) {
+        if (value == keywords[i]) {
+            return true;
+        }
+    }
+    return false;
 }
 
 Lexer::Lexer(const std::string& filename)
@@ -87,12 +93,25 @@ void Lexer::consumeKeyword(std::string& token_value)
     {
         consumeWhiteSpace();
         parameter_value = "";
-        while (!this->file.eof() && current_char != ';')
+        if (token_value == "location")
         {
-            if (current_char == ' ')
-                throw LexerException("Keyword \"" + token_value + "\" has more than one parameter");
-            parameter_value += current_char;
-            current_char = this->file.get();
+            while (!this->file.eof() && current_char != '{')
+            {
+                if (current_char == ' ' && token_value != "allow_methods" && token_value != "location")
+                    throw LexerException("Keyword \"" + token_value + "\" has more than one parameter");
+                parameter_value += current_char;
+                current_char = this->file.get();
+            }
+        }
+        else
+        {
+            while (!this->file.eof() && current_char != ';')
+            {
+                if (current_char == ' ' && token_value != "allow_methods")
+                    throw LexerException("Keyword \"" + token_value + "\" has more than one parameter");
+                parameter_value += current_char;
+                current_char = this->file.get();
+            }
         }
         if (parameter_value.empty())
             throw LexerException("Empty parameter found for keyword \"" + token_value + "\"");

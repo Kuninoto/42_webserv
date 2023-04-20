@@ -12,7 +12,6 @@
 # define SETSOCKETOPT_ERR "fatal: settockopt() failed"
 
 typedef struct location_s {
-    std::string index;
     std::string root;
     std::vector<std::string> allowed_methods;
     std::string redirect;
@@ -21,6 +20,7 @@ typedef struct location_s {
     std::string cgi_ext;
 }               location_t;
 
+typedef std::map<std::string, location_t> locationMap;
 
 class Server {
     public:
@@ -37,8 +37,10 @@ class Server {
         std::string getErrorResponse(void){ return this->error_response; };
         size_t getMaxBodySize(void) const { return this->clientMaxBodySize; };
 		int getSocketFd(void) const { return this->socket_fd; };
-
+        void addLocation(std::pair<std::string, location_t> locationPair);
 		void createSocket(void);
+
+        locationMap locations;
 
     private:
         // 8080
@@ -52,7 +54,6 @@ class Server {
         std::string root;
         std::string index;
         size_t clientMaxBodySize;
-        std::map<std::string, location_t> locations;
 
         std::string error_response;
 
