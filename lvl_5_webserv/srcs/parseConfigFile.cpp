@@ -61,6 +61,7 @@ std::vector<Server> parseConfigFile(std::string filename)
             }
             if (token.value == "location")
             {
+                std::cout << "CONA" << std::endl;
                 if (hasLocation == false)
                 {
                     servers.push_back(Server(lexer.parameters));
@@ -74,10 +75,14 @@ std::vector<Server> parseConfigFile(std::string filename)
             else if (curly_brackets == 0 && !hasLocation)
             {
                 servers.push_back(Server(lexer.parameters));
+                i += 1;
                 break;
             }            
             else if (curly_brackets == 0)
+            {
+                i += 1;
                 break;
+            }
             token = lexer.nextToken();
         }
         if (curly_brackets > 0)
