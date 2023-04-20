@@ -37,11 +37,11 @@ class CGI {
 		CGI() {};
 		~CGI() {};
 
-		std::string	formatTime(time_t mod_time);
+		string		formatTime(time_t mod_time);
 		bool		isRegularFile(const char *path);
 		void		dirListing(string requestedPath);
-		void		handle_directory_listing(TcpConnection& connection, const std::string& path);
-		bool		isDirectory(const std::string& path);
+		void		handleDirectoryListing(const string& path);
+		bool		isDirectory(const char *path);
 
 };
 
