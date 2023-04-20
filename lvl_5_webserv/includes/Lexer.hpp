@@ -20,6 +20,7 @@ class Lexer {
         ~Lexer(void);
         Token nextToken(void);
 
+        // Keyword, parameter
         std::map<std::string, std::string> parameters;
 
         class LexerException : public std::exception {
@@ -39,4 +40,5 @@ class Lexer {
         void consumeWhiteSpace(void);
         void consumeComment(void);
         void consumeKeyword(std::string& token_value);
+        void consumeParameter(std::string& token_value);
 };
