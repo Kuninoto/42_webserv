@@ -3,7 +3,7 @@
 
 # include <sys/stat.h>
 # include <cstdlib>
-# include <cstdint>
+# include <stdint.h>
 # include <string>
 # include <unistd.h>
 # include <vector>
@@ -19,11 +19,11 @@ class CGI {
 		std::map<std::string, std::vector<std::string> > routeMethods;
 		std::map<std::string, std::string> routePaths;
 		bool directoryListingEnabled;
-		std::string defaultFileName = "index.html";
+		std::string defaultFileName;
 
 
 	public:
-		CGI(void) {};
+		CGI(void) {defaultFileName = "index.html";};
 		~CGI(void) {};
 
 		bool isRegularFile(const char *path);
