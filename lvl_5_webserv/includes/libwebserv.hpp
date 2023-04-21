@@ -5,7 +5,6 @@
 # include <string>
 # include <unistd.h>
 # include <iostream>
-# include <arpa/inet.h>
 # include <poll.h>
 # include <memory.h>
 

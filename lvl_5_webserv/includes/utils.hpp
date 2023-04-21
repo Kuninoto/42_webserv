@@ -5,6 +5,7 @@
 # include <string>
 # include <iostream>
 
+# define RESET "\x1B[0m"
 # define RED "\x1B[31m"
 # define GREEN "\x1B[32m"
 # define YELLOW "\x1B[33m"
@@ -26,8 +27,8 @@ std::string getHeader(std::string file);
 
 static inline void messageLog(std::string message, std::string color, bool error)
 {
-    if (error) std::cerr << color << "["<< getTime() << "] " << message << std::endl;
-    else std::cout << color << "["<< getTime() << "] " << message << std::endl;
+    if (error) std::cerr << color << "["<< getTime() << "] " << message << RESET << std::endl;
+    else std::cout << color << "["<< getTime() << "] " << message << RESET << std::endl;
 };
 
 #endif // UTILS_HPP

@@ -42,7 +42,23 @@ void Client::parseRequest()
 // get the path to file, this will be usefull when join root + index + path
 std::string Client::getPathToPage()
 {
-    return server.getRoot() + page.erase(0, 1);
+    std::map<std::string, location_t>::const_iterator location;
+    std::string path = server.getRoot();
+
+/*     for (location = server.getLocations().begin(); location != server.getLocations().end(); location++)
+    {
+        if (page.find(location->first) != std::string::npos)
+        {
+            
+        }
+
+        std::cout << location->first << std::endl;
+    } */
+/*     std::cout << "--" << std::endl; */
+
+    if (page == "/")
+        return path + server.getIndex();
+    return path + page.erase(0, 1);
 }
 
 /* void Client::responseFavIcon()
@@ -85,8 +101,6 @@ void Client::response()
     }
 
     std::string header(getHeader(path_to_file));
-
-    std::cout << header << std::endl;
 
     header.append((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());	
 

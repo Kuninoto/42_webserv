@@ -1,58 +1,10 @@
 #include "libwebserv.hpp"
 
-# include <iostream>
-# include <stdio.h>
-# include <netdb.h>
-
 using std::cout;
 using std::cerr;
 using std::endl;
 
-# define NR_PENDING_CONNECTIONS 10
-
 bool g_stopServer = false;
-
-void configureServers(std::vector<Server> &servers, struct pollfd **pollfds)
-{
-	std::vector<Server>::iterator server;
-	struct addrinfo hints, *result;
-	int opt = 1;
-	int i = 0;
-
-	memset(&hints, 0, sizeof (hints));
-	hints.ai_family = AF_INET;
-	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_protocol = IPPROTO_TCP;
-
-	*pollfds = (struct pollfd *)malloc(servers.size() * sizeof(struct pollfd));
-
-	for (server = servers.begin(); server != servers.end(); server++, i++)
-	{
-		server->createSocket();
-
-		if (setsockopt(server->getSocketFd(), SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(int)) < 0)
-			throw std::runtime_error(SETSOCKETOPT_ERR);
-
-		cout << server->getHost().c_str() <<  server->getPort().c_str() << endl;
-
-		if (getaddrinfo(server->getHost().c_str(), server->getPort().c_str(), &hints, &result) != 0)
-			throw;
-
-		cout << "Trying to bind..." << endl;
-		if (bind(server->getSocketFd(), result->ai_addr, result->ai_addrlen) == -1)
-			throw;
-		cout << "Binding successful" << endl;
-
-		cout << "Listening..." << endl;
-		listen(server->getSocketFd(), NR_PENDING_CONNECTIONS);
-
-		pollfds[0][i].fd = server->getSocketFd();
-		pollfds[0][i].events = POLLIN;
-		pollfds[0][i].revents = 0;
-
-		freeaddrinfo(result);
-	}
-}
 
 int main(int argc, char **argv)
 {
@@ -61,6 +13,8 @@ int main(int argc, char **argv)
 	if (argc != 2 || !argv[1][0])
 		return panic(ARGS_ERR);
 
+	WebServ webserv;
+
 	std::vector<Server> servers;
 	std::vector<Client> clients;
 	struct pollfd *pollfds = NULL;
@@ -68,17 +22,27 @@ int main(int argc, char **argv)
 	//TODO Parse the config file
 	try {
 		servers = parseConfigFile(argv[1]);
-		configureServers(servers, &pollfds);
 	}
 	catch (std::exception& e) {
 		cerr << ERROR_MSG_PREFFIX << "invalid config file: " << e.what() << endl;
 		return EXIT_FAILURE;
 	}
 
-	char hostname[1024];
+	try
+	{
+		webserv.bootServers(servers, &pollfds);
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
+		return EXIT_FAILURE;
+	}
+	
+
+/* 	char hostname[1024];
 	hostname[1023] = '\0';
 	gethostname(hostname, 1023);
-	cout << "Hostname: " << hostname << endl;
+	cout << "Hostname: " << hostname << endl; */
 
 	//std::string server_name("olaamigos");
 	//if (setsockopt(socket.getSocketFd(), SOL_SOCKET, SO_REUSEPORT, server_name.c_str(), server_name.length()) < 0)
@@ -135,9 +99,8 @@ int main(int argc, char **argv)
 					}
 					else
 					{
-						cout << "connection close" << endl;
-						cout << i << endl;
 						close(pollfds[i].fd);
+						clients.erase(clients.begin() + i - reserved_socket_fd);
 						for (size_t j = i; j < open_fds - 1; j++)
 							pollfds[j].fd = pollfds[j + 1].fd;						
 						pollfds[open_fds - 1].fd = -1;
@@ -145,6 +108,9 @@ int main(int argc, char **argv)
 					}
 				}
 			}
+
+			if (pollfds[i].fd < servers.at(reserved_socket_fd - 1).getSocketFd())
+				continue;
 
 			if (pollfds[i].revents & POLLOUT) {
 				clients.at(i - reserved_socket_fd).response();
