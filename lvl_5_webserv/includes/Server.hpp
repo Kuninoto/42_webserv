@@ -21,6 +21,7 @@ typedef struct location_s {
 }               location_t;
 
 typedef std::map<std::string, location_t> locationMap;
+typedef std::pair<std::string, location_t> locationPair;
 
 class Server {
     public:
