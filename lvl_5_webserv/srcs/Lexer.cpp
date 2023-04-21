@@ -97,8 +97,6 @@ void Lexer::consumeKeyword(std::string& token_value)
         {
             while (!this->file.eof() && current_char != '{')
             {
-                if (current_char == ' ' && token_value != "allow_methods" && token_value != "location")
-                    throw LexerException("Keyword \"" + token_value + "\" has more than one parameter");
                 parameter_value += current_char;
                 current_char = this->file.get();
             }
