@@ -1,10 +1,10 @@
-#include <stdlib.h>
-#include <unistd.h>
-#include <errno.h>
-#include <sstream>
-#include <fstream>
-#include "Server.hpp"
-#include "WebServ.hpp"
+# include <stdlib.h>
+# include <unistd.h>
+# include <errno.h>
+# include <sstream>
+# include <fstream>
+# include "Server.hpp"
+# include "WebServ.hpp"
 
 static size_t parseClientMaxBodySize(const std::string& str)
 {

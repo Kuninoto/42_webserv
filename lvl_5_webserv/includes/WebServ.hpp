@@ -3,6 +3,8 @@
 
 # include <string>
 # include <map>
+# include <poll.h>
+
 # include "Server.hpp"
 # include "utils.hpp"
 
@@ -15,6 +17,8 @@ class WebServ {
 		{ params[param] = value; }
 	
 		void parseConfigFile(const std::string& filename);
+
+		void bootServers(std::vector<Server> &servers, struct pollfd **pollfds);
 
 		class ParserException : public std::exception {
     		public:

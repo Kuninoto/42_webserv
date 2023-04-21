@@ -34,6 +34,7 @@ class Server {
         const std::string& getErrorPagePath(void) const { return this->errorPagePath; };
         const std::string& getRoot(void) const { return this->root; };
         const std::string& getLocationRoot(const std::string& key) { return this->locations[key].root; };
+        const locationMap& getLocations() const { return this->locations; };
         std::string getErrorResponse(void){ return this->error_response; };
         size_t getMaxBodySize(void) const { return this->clientMaxBodySize; };
 		int getSocketFd(void) const { return this->socket_fd; };
