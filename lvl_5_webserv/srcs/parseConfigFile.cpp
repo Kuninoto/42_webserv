@@ -1,18 +1,49 @@
 #include "WebServ.hpp"
 #include "Server.hpp"
 #include "Lexer.hpp"
+#include <unistd.h>
 #include <stack>
 #include <iostream>
+
+typedef std::pair<std::string, location_t> locationPair;
+typedef std::map<std::string, location_t> locationMap;
+
+locationPair parseLocation(const std::map<std::string, std::string>& lexerParameters,
+                                                 const std::string& locationPath)
+{
+    location_t locationStruct;
+
+    locationStruct.root = lexerParameters.find("root")->second;
+    locationStruct.allowed_methods = splitStr(lexerParameters.find("allow_methods")->second, ' ');
+    locationStruct.redirect = lexerParameters.find("return")->second;
+    locationStruct.auto_index = lexerParameters.find("auto_index")->second == "on" ? true : false;
+    std::string temp = lexerParameters.find("cgi_path")->second;
+    if (access(temp.c_str(), X_OK) != 0)
+        throw WebServ::ParserException("invalid cgi_path");
+    locationStruct.cgi_path = temp;
+    locationStruct.cgi_ext = lexerParameters.find("cgi_ext")->second;
+
+    return std::make_pair<std::string, location_t>(locationPath, locationStruct);
+}
+
+static void readLocationBlock(Lexer& lexer, Token& token)
+{
+    token = lexer.nextToken();
+    while (token.type != RIGHT_CURLY_BRACKET)
+        token = lexer.nextToken();
+}
 
 std::vector<Server> parseConfigFile(std::string filename)
 {
 	Lexer lexer(filename);
 	std::vector<Server> servers;
+    size_t i = 0;
 
     // Parse Server scopes
     Token token = lexer.nextToken();
     while (token.type != END_OF_FILE)
     {
+        bool hasLocation = false;
         int curly_brackets = 0;
         while (true)
         {
@@ -28,14 +59,28 @@ std::vector<Server> parseConfigFile(std::string filename)
             else if (token.type == RIGHT_CURLY_BRACKET) {
                 curly_brackets -= 1;
             }
-            //if (token.value == "location")
-            //{
-            // different behavior    
-            //}
-            if (curly_brackets == 0 || token.type == END_OF_FILE)
+            if (token.value == "location")
+            {
+                std::cout << "CONA" << std::endl;
+                if (hasLocation == false)
+                {
+                    servers.push_back(Server(lexer.parameters));
+                    hasLocation = true;
+                    lexer.parameters.clear();
+                }
+                readLocationBlock(lexer, token);
+                servers.at(i).locations.insert(parseLocation(lexer.parameters, lexer.parameters["location"]));
+                lexer.parameters.clear();
+            }
+            else if (curly_brackets == 0 && !hasLocation)
             {
                 servers.push_back(Server(lexer.parameters));
-                lexer.parameters.clear();
+                i += 1;
+                break;
+            }            
+            else if (curly_brackets == 0)
+            {
+                i += 1;
                 break;
             }
             token = lexer.nextToken();
@@ -44,10 +89,5 @@ std::vector<Server> parseConfigFile(std::string filename)
             throw WebServ::ParserException("Unclosed curly brackets");
         token = lexer.nextToken();
     }
-
-    for (size_t i = 0; i < servers.size(); i += 1) {
-        std::cout << servers.at(i) << std::endl; 
-    }
-
 	return servers;
 }

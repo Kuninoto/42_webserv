@@ -1,19 +1,10 @@
-#include "../includes/CGI.hpp"
+#include "CGI.hpp"
+#include <iostream>
+#include <sstream>
 
-CGI::CGI() {
-	routeMethods["/general"] = {"GET", "POST", "DELETE"};
-	routeMethods["/pages"] = {"GET", "POST"};
-
-	routePaths["/pages"] = "/home/Flirt/Desktop/Projects_42/Webserver/lvl_5_webserv/pages/";
-	routePaths["/"] = "/home/Flirt/Desktop/Projects_42/Webserver/lvl_5_webserv/";
-}
-
-std::string formatTime(time_t mod_time)
-{
-	char buf[80];
-	std::strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", std::localtime(&mod_time));
-	return std::string(buf);
-}
+using std::cout;
+using std::cerr;
+using std::endl;
 
 bool CGI::isRegularFile(const char *path)
 {
@@ -27,34 +18,32 @@ bool CGI::isRegularFile(const char *path)
 
 bool CGI::isDirectory(const char *path)
 {
-	if (access(path, F_OK) != 0)
-	{
+	if (access(path, F_OK) != 0) {
 		return false;  // path does not exist
 	}
 
 	struct stat fileStat;
-	if (stat(path, &fileStat) == 0)
-	{
+	if (stat(path, &fileStat) == 0) {
 		return S_ISDIR(fileStat.st_mode);
 	}
 	return false;
 }
 
-void CGI::handleDirectoryListing(const string& path)
+void CGI::handleDirectoryListing(const std::string& path)
 {
 	// Generate directory listing HTML
-	string html = "<html><head><title>Index of " + path + "</title></head><body>\n";
+	std::string html = "<html><head><title>Index of " + path + "</title></head><body>\n";
 	html += "<h1>Index of " + path + "</h1>\n";
 	html += "<table>\n";
 	html += "<tr><th>Name</th><th>Last Modified</th><th>Size</th></tr>\n";
 
-	DIR*			dir = opendir(path.c_str());
-	struct dirent*	entry;
+	DIR* dir = opendir(path.c_str());
+	struct dirent* entry;
 
 	while ((entry = readdir(dir)) != NULL)
 	{
-		string name = entry->d_name;
-		string full_path = path + "/" + name;
+		std::string name = entry->d_name;
+		std::string full_path = path + "/" + name;
 		struct stat st;
 
 		if (stat(full_path.c_str(), &st) == -1)
@@ -62,10 +51,15 @@ void CGI::handleDirectoryListing(const string& path)
 			continue;
 		}
 
-		string			modified = formatTime(st.st_mtime);
-		uintmax_t		size = isRegularFile(full_path.c_str()) ? st.st_size : 0;
+		std::string modified = getTimeStamp();
+		uint64_t	toConvSize = isRegularFile(full_path.c_str()) ? st.st_size : 0;
 
-		html += "<tr><td><a href=\"" + name + "\">" + name + "</a></td><td>" + modified + "</td><td>" + std::to_string(size) + "</td></tr>\n";
+		std::stringstream ss;
+		ss << toConvSize;
+		std::string size = ss.str();
+
+
+		html += "<tr><td><a href=\"" + name + "\">" + name + "</a></td><td>" + modified + "</td><td>" + size + "</td></tr>\n";
 		html += "</table>\n";
 		html += "</body></html>\n";
 
@@ -82,7 +76,7 @@ void CGI::handleDirectoryListing(const string& path)
 	}
 }
 
-void	CGI::dirListing(string requestedPath)
+void	CGI::dirListing(std::string requestedPath)
 {
 	directoryListingEnabled = true;
 
@@ -102,7 +96,7 @@ void	CGI::dirListing(string requestedPath)
 			handleDirectoryListing(requestedPath);
 		else
 			// send 403 Forbidden response
-			string response = "HTTP/1.1 403 Forbidden\r\n\r\n";
+			std::string response = "HTTP/1.1 403 Forbidden\r\n\r\n";
 	}
 	else if (isRegularFile(requestedPath.c_str()))
 	{
