@@ -115,13 +115,11 @@ int main(int argc, char **argv)
 					}
 					open_fds += 1;
 
-					//TODO accept to inside constructor amd get it with getFd to save in pollfds[...].fd, also throw inside if error and catch here
 					int temp = accept(servers.at(i).getSocketFd(), NULL, NULL);
 					if (temp < 0)
 						throw;
 					pollfds[open_fds - 1].fd = temp; 
 					clients.push_back(Client(servers.at(i), temp));
-					// -------
 
 					pollfds[open_fds - 1].events = POLLIN | POLLOUT;
 					pollfds[open_fds - 1].revents = 0;

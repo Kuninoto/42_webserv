@@ -4,7 +4,7 @@
 # include <iostream>
 # include <sstream>
 
-static std::string getFileType(std::string file)
+std::string getFileType(std::string file)
 {
     std::map<std::string, std::string> types;
 
@@ -19,13 +19,14 @@ static std::string getFileType(std::string file)
     return types[file.substr(file.find_last_of(".") + 1)];
 }
 
-static std::string getFileSize(std::string file)
+std::string getFileSize(std::string file)
 {
     std::streampos begin, end;
     std::stringstream stream;
     std::string size;
 
-    std::ifstream open_file (file.c_str(), std::ios::binary);
+    std::ifstream open_file(file.c_str(), std::ios::binary | std::ios::in);
+
 
     begin = open_file.tellg();
     open_file.seekg (0, std::ios::end);
@@ -41,9 +42,4 @@ static std::string getFileSize(std::string file)
 std::string getHeader(std::string file)
 {
     return "HTTP/1.1 200 OK\nContent-Type: " + getFileType(file) + "; charset=UTC-8\nContent-Length: " + getFileSize(file) +"\n\n";
-}
-
-std::string getErrorHeader(std::string file)
-{
-    return "HTTP/1.1 400 Not Found\nContent-Type: " + getFileType(file) + "; charset=UTC-8\nContent-Length: " + getFileSize(file) +"\n\n";
 }

@@ -75,36 +75,21 @@ void Client::response()
     }
     */
     std::string path_to_file = getPathToPage();
-    //? GET [name]
-    //? [name] is the file to open
     std::ifstream file(path_to_file.c_str(), std::ios::binary | std::ios::in);
 
     if (!file.is_open())
     {
-        std::string a = server.getErrorPagePath();
-        std::string b = a.erase(0, 1);
-        std::string header(getErrorHeader(b));
-        std::ifstream file(b.c_str(), std::ios::binary | std::ios::in);
-        header.append((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());	
-
-        write(this->fd , header.c_str() , header.length());
+        write(this->fd , server.getErrorResponse().c_str() , server.getErrorResponse().length());
         request.clear();
         return ;
     }
 
     std::string header(getHeader(path_to_file));
 
-    // std::string header("HTTP/ 1.1 200 OK\n");
-    // header.append("Content-Type: " + getFileType(path_to_file) + "/" + 2getFileExtension(path_to_file) + "; charset=UTC-8\n");
-    // header.append("Content-Length: " + getFileSize(path_to_file) + "\n");
-
-
-    //std::string img((std::istreambuf_iterator<char>(img_file)), std::istreambuf_iterator<char>());
+    std::cout << header << std::endl;
 
     header.append((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());	
 
     write(this->fd , header.c_str() , header.length());
-    // write(fd , hello.c_str() , hello.length());
-    //write(fd , img.c_str(), img.length());
     request.clear();
 }

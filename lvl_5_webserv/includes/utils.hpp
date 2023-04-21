@@ -20,8 +20,9 @@ std::vector<T> sliceVec(std::vector<T>& vec, unsigned int start_idx, unsigned in
 const std::string getTimeStamp(void);
 const std::string getTime(void);
 
-std::string getHeader(std::string header);
-std::string getErrorHeader(std::string file);
+std::string getFileType(std::string file);
+std::string getFileSize(std::string file);
+std::string getHeader(std::string file);
 
 static inline void messageLog(std::string message, std::string color, bool error)
 {

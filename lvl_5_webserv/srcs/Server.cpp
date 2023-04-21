@@ -63,19 +63,19 @@ Server::Server(std::map<std::string, std::string>& parameters)
     this->index = parameters["index"];
     this->clientMaxBodySize = parseClientMaxBodySize(parameters["client_max_body_size"]);
 
-    // this->createErrorResponse();
+    this->createErrorResponse();
 }
 
-/* void Server::createErrorResponse()
+void Server::createErrorResponse()
 {
+    std::string path_to_error_page = this->root + this->errorPagePath;
 
-    //TODO 404 exists or throw
-    this->error_response = getErrorHeader(parameters["root"] + parameters["error_page"].erase(0, 1));
-    std::ifstream file(parameters["error_page"].erase(0, 1).c_str(), std::ios::binary | std::ios::in);
+    std::ifstream file(path_to_error_page.c_str(), std::ios::binary | std::ios::in);
+
+    this->error_response = "HTTP/1.1 400 Not Found\nContent-Type: " + getFileType(path_to_error_page) + "; charset=UTC-8\nContent-Length: " + getFileSize(path_to_error_page) + "\n\n";
+    
     this->error_response.append((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-    std::cout << "tye" << this->error_response << std::endl;
-
-} */
+}
 
 void Server::createSocket(void)
 {
