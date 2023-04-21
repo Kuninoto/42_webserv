@@ -3,46 +3,34 @@
 
 # include <sys/stat.h>
 # include <cstdlib>
+# include <stdint.h>
 # include <string>
 # include <unistd.h>
-# include <iostream>
-# include <arpa/inet.h>
-# include <poll.h>
-# include <memory.h>
 # include <vector>
 # include <map>
 # include <dirent.h>
-# include <ctime>
 
 # include "TcpConnection.hpp"
 # include "utils.hpp"
 
-
-using std::cout;
-using std::endl;
-using std::string;
-using std::map;
-using std::vector;
-
 class CGI {
 
 	private:
-		map<string, vector<string>>	routeMethods;
-		map<string, string>			routePaths;
-		bool 						directoryListingEnabled;
-		string 						defaultFileName = "index.html";
+		std::map<std::string, std::vector<std::string> > routeMethods;
+		std::map<std::string, std::string> routePaths;
+		bool directoryListingEnabled;
+		std::string defaultFileName;
 
 
 	public:
-		CGI() {};
-		~CGI() {};
+		CGI(void) {defaultFileName = "index.html";};
+		~CGI(void) {};
 
-		string		formatTime(time_t mod_time);
-		bool		isRegularFile(const char *path);
-		void		dirListing(string requestedPath);
-		void		handleDirectoryListing(const string& path);
-		bool		isDirectory(const char *path);
+		bool isRegularFile(const char *path);
+		void dirListing(std::string requestedPath);
+		void handleDirectoryListing(const std::string& path);
+		bool isDirectory(const char *path);
 
 };
 
-#endif
+#endif // CGI_HPP
