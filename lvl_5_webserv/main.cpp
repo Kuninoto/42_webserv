@@ -9,7 +9,6 @@ bool g_stopServer = false;
 int main(int argc, char **argv)
 {
 	system("clear");
-
 	if (argc != 2 || !argv[1][0])
 		return panic(ARGS_ERR);
 
@@ -19,12 +18,11 @@ int main(int argc, char **argv)
 	std::vector<Client> clients;
 	struct pollfd *pollfds = NULL;
 
-	//TODO Parse the config file
 	try {
 		servers = parseConfigFile(argv[1]);
 	}
 	catch (std::exception& e) {
-		cerr << ERROR_MSG_PREFFIX << "invalid config file: " << e.what() << endl;
+		cerr << ERROR_MSG_PREFFIX << "fatal: " << e.what() << endl;
 		return EXIT_FAILURE;
 	}
 
@@ -63,7 +61,7 @@ int main(int argc, char **argv)
 				return panic(POLL_FAIL); // change this
 		}
 
-		for (size_t i = 0; i < open_fds; i ++)
+		for (size_t i = 0; i < open_fds; i += 1)
 		{
 			if (pollfds[i].fd < servers.at(0).getSocketFd())
 				continue;
@@ -125,5 +123,6 @@ int main(int argc, char **argv)
 	}
 	free(pollfds);
 	messageLog("Server closed", GREEN, false);
+
 	return EXIT_SUCCESS;
 }

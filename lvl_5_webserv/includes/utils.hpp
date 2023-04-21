@@ -25,7 +25,7 @@ std::string getFileType(std::string file);
 std::string getFileSize(std::string file);
 std::string getHeader(std::string file);
 
-static inline void messageLog(std::string message, std::string color, bool error)
+static inline void messageLog(const std::string& message, const char *color, bool error)
 {
     if (error) std::cerr << color << "["<< getTime() << "] " << message << RESET << std::endl;
     else std::cout << color << "["<< getTime() << "] " << message << RESET << std::endl;

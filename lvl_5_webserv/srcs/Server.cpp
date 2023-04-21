@@ -55,7 +55,6 @@ Server::Server(std::map<std::string, std::string>& parameters)
     this->host = parameters["host"];
 
     std::string& temp = parameters["error_page"];
-    std::cout << "\"" << temp.c_str() << "\"" << std::endl;
 
     // RELATIVE TO ROOT
     if (access(temp.c_str(), R_OK) != 0)

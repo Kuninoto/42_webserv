@@ -4,33 +4,40 @@
 #include <unistd.h>
 #include <stack>
 #include <iostream>
-
-typedef std::pair<std::string, location_t> locationPair;
-typedef std::map<std::string, location_t> locationMap;
+#include <memory.h>
 
 locationPair parseLocation(const std::map<std::string, std::string>& lexerParameters,
                                                  const std::string& locationPath)
 {
     location_t locationStruct;
+    bzero(&locationStruct, sizeof(location_t));
 
-    locationStruct.root = lexerParameters.find("root")->second;
-    locationStruct.allowed_methods = splitStr(lexerParameters.find("allow_methods")->second, ' ');
-    locationStruct.redirect = lexerParameters.find("return")->second;
-    locationStruct.auto_index = lexerParameters.find("auto_index")->second == "on" ? true : false;
-    std::string temp = lexerParameters.find("cgi_path")->second;
-    if (access(temp.c_str(), X_OK) != 0)
-        throw WebServ::ParserException("invalid cgi_path");
-    locationStruct.cgi_path = temp;
-    locationStruct.cgi_ext = lexerParameters.find("cgi_ext")->second;
-
+    if (lexerParameters.count("root") > 0)
+        locationStruct.root = lexerParameters.find("root")->second;
+    if (lexerParameters.count("allow_methods") > 0)
+        locationStruct.allowed_methods = splitStr(lexerParameters.find("allow_methods")->second, ' ');
+    if (lexerParameters.count("return") > 0)
+        locationStruct.redirect = lexerParameters.find("return")->second;
+    if (lexerParameters.count("auto_index") > 0)
+        locationStruct.auto_index = lexerParameters.find("auto_index")->second == "on" ? true : false;
+    if (lexerParameters.count("cgi_path") > 0)
+    {
+        std::string temp = lexerParameters.find("cgi_path")->second;
+        if (access(temp.c_str(), X_OK) != 0)
+            throw WebServ::ParserException("invalid cgi_path");
+        locationStruct.cgi_path = temp;
+    }
+    if (lexerParameters.count("cgi_ext") > 0)
+        locationStruct.cgi_ext = lexerParameters.find("cgi_ext")->second;
     return std::make_pair<std::string, location_t>(locationPath, locationStruct);
 }
 
 static void readLocationBlock(Lexer& lexer, Token& token)
 {
     token = lexer.nextToken();
-    while (token.type != RIGHT_CURLY_BRACKET)
+    while (token.type != RIGHT_CURLY_BRACKET) {
         token = lexer.nextToken();
+    }
 }
 
 std::vector<Server> parseConfigFile(std::string filename)
@@ -61,12 +68,13 @@ std::vector<Server> parseConfigFile(std::string filename)
             }
             if (token.value == "location")
             {
-                std::cout << "CONA" << std::endl;
                 if (hasLocation == false)
                 {
-                    servers.push_back(Server(lexer.parameters));
                     hasLocation = true;
+                    servers.push_back(Server(lexer.parameters));
+                    std::string temp = lexer.parameters["location"];
                     lexer.parameters.clear();
+                    lexer.parameters["location"] = temp;
                 }
                 readLocationBlock(lexer, token);
                 servers.at(i).locations.insert(parseLocation(lexer.parameters, lexer.parameters["location"]));

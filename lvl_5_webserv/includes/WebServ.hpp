@@ -22,14 +22,14 @@ class WebServ {
 
 		class ParserException : public std::exception {
     		public:
-        		ParserException(const std::string& message) : message(message) {};
+        		ParserException(std::string message) : message(message) {};
     
     		virtual const char* what() const throw() {
         		return message.c_str();
     		};
 
     		private:
-        	const std::string& message;
+        		const std::string& message;
 		};
 
 	private:
