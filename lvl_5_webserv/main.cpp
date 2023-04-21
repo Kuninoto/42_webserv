@@ -19,7 +19,7 @@ void configureServers(std::vector<Server> &servers, struct pollfd **pollfds)
 	int opt = 1;
 	int i = 0;
 
-	memset(&hints, 0, sizeof (hints));
+	bzero(&hints, sizeof(hints));
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_protocol = IPPROTO_TCP;
@@ -57,7 +57,6 @@ void configureServers(std::vector<Server> &servers, struct pollfd **pollfds)
 int main(int argc, char **argv)
 {
 	system("clear");
-
 	if (argc != 2 || !argv[1][0])
 		return panic(ARGS_ERR);
 
@@ -65,13 +64,12 @@ int main(int argc, char **argv)
 	std::vector<Client> clients;
 	struct pollfd *pollfds = NULL;
 
-	//TODO Parse the config file
 	try {
 		servers = parseConfigFile(argv[1]);
 		configureServers(servers, &pollfds);
 	}
 	catch (std::exception& e) {
-		cerr << ERROR_MSG_PREFFIX << "invalid config file: " << e.what() << endl;
+		cerr << ERROR_MSG_PREFFIX << "fatal: " << e.what() << endl;
 		return EXIT_FAILURE;
 	}
 
@@ -99,7 +97,7 @@ int main(int argc, char **argv)
 				return panic(POLL_FAIL); // change this
 		}
 
-		for (size_t i = 0; i < open_fds; i ++)
+		for (size_t i = 0; i < open_fds; i += 1)
 		{
 			if (pollfds[i].fd < servers.at(0).getSocketFd())
 				continue;
@@ -115,7 +113,7 @@ int main(int argc, char **argv)
 					}
 					open_fds += 1;
 
-					//TODO accept to inside constructor amd get it with getFd to save in pollfds[...].fd, also throw inside if error and catch here
+					//TODO accept to inside constructor and get it with getFd to save in pollfds[...].fd, also throw inside if error and catch here
 					int temp = accept(servers.at(i).getSocketFd(), NULL, NULL);
 					if (temp < 0)
 						throw;
@@ -161,5 +159,6 @@ int main(int argc, char **argv)
 	}
 	free(pollfds);
 	messageLog("Server closed", GREEN, false);
+
 	return EXIT_SUCCESS;
 }

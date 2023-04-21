@@ -23,10 +23,12 @@ const std::string getTime(void);
 std::string getHeader(std::string header);
 std::string getErrorHeader(std::string file);
 
-static inline void messageLog(std::string message, std::string color, bool error)
+static inline void messageLog(const std::string& message, const char *color, bool error)
 {
-    if (error) std::cerr << color << "["<< getTime() << "] " << message << std::endl;
-    else std::cout << color << "["<< getTime() << "] " << message << std::endl;
+    if (error)
+        std::cerr << color << "[" << getTime() << "] " << message << '\n';
+    else
+        std::cout << color << "[" << getTime() << "] " << message << std::endl;
 };
 
 #endif // UTILS_HPP
