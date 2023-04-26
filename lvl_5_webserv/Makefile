@@ -4,7 +4,7 @@ INCLUDE = -I./includes
 VPATH = srcs srcs/utils
 RM = rm -rf
 
-UTILS = splitStr sliceVec time file
+UTILS = splitStr sliceVec time file trimStr
 GENERAL = Lexer WebServ Client Server parseConfigFile CGI
 
 NAME = webserv

@@ -1,5 +1,7 @@
 # include "Client.hpp"
 # include <sstream>
+# include <algorithm>
+# include <dirent.h>
 
 Client::Client(Server server, int fd): server(server), fd(fd), request_sent(false){}
 
@@ -27,38 +29,81 @@ void Client::parseRequest()
         std::cout << "error" << std::endl;
 
     page = components.at(1);
-
-    if (components.at(1).find("html") != std::string::npos)
-        type = HTML;
-    else if (components.at(1).find("png") != std::string::npos)
-        type = IMAGE;
-    else if (components.at(1).find("/favicon.ico") != std::string::npos)
-        type = FAVICON;
-    else
-        type = TEXT;
-
 }
 
-// get the path to file, this will be usefull when join root + index + path
-std::string Client::getPathToPage()
-{
-    std::map<std::string, location_t>::const_iterator location;
-    std::string path = server.getRoot();
-
-/*     for (location = server.getLocations().begin(); location != server.getLocations().end(); location++)
+void Client::sendDirectoryListing(std::string path) {
+    std::string response = "HTTP/1.1 200 OK\nContent-Type: text/html; charset=UTC-8\nContent-Length: \n\n<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Document</title>\n</head>\n<body>\n";
+    DIR *dir;
+    struct dirent *ent;
+    
+    dir = opendir(path.c_str());
+    while ((ent = readdir(dir)) != NULL)
     {
-        if (page.find(location->first) != std::string::npos)
+        std::string temp(ent->d_name);
+        if (temp == "." || temp == "..")
+            continue;
+        response.append("\t<a href=\"" + (path + ent->d_name) + "\">" + ent->d_name +"</a><br>\n");
+    }
+    closedir(dir);
+
+    response.insert(71, ft_ntos(response.size() - 78));  
+    response.append("</body>\n</html>\r\n\r\n");
+
+    write(this->fd, response.c_str(), response.length());
+    request.clear();
+}
+
+// get the path to file, this will be useful when join root + index + path
+void Client::resolveResponse(std::string& root, std::string& path, size_t safety_cap)
+{
+    //TODO: better way to do this
+    //! error code 508
+    if (safety_cap >= 10)
+        return;
+
+    locationMap::const_iterator location;
+
+    for (location = server.getLocations().begin(); location != server.getLocations().end(); location++)
+    {
+        if (location->first == "/") continue;
+
+        std::string::size_type locate = path.find(location->first);
+        if (locate == std::string::npos) continue;
+
+        if (location->second.redirect.size())
         {
-            
+            path.erase(locate, location->first.size())
+                .insert(locate, location->second.redirect);
+            resolveResponse(root, path, safety_cap + 1);
+            return ;
         }
 
-        std::cout << location->first << std::endl;
-    } */
-/*     std::cout << "--" << std::endl; */
+        if (location->second.root.size())
+        {
+            path.erase(locate, location->first.size());
+            root = location->second.root;
+        }
 
-    if (page == "/")
-        return path + server.getIndex();
-    return path + page.erase(0, 1);
+        if (isDirectory((root + path).c_str()))
+        {
+            if (location->second.try_file.size())
+                sendResponse(root + path + "/" + location->second.try_file);
+            else if (location->second.auto_index) {
+                sendDirectoryListing(root + path.erase(0, 1));
+            }
+            // else
+            //
+            //
+            // pribnt files
+            // error_code forbiden route
+            return;
+
+        }
+    }
+
+    if (path == "/")
+        path += server.getIndex();
+    sendResponse(root + path.erase(0, 1));
 }
 
 /* void Client::responseFavIcon()
@@ -67,14 +112,35 @@ std::string Client::getPathToPage()
     if (!img_file.is_open())
         return;
 
-    std::string header("HTTP/1.1 200 OK\r\nContent-Type: image/png\r\nContent-Length: 85405\r\n\r\n");
+    std::string response("HTTP/1.1 200 OK\r\nContent-Type: image/png\r\nContent-Length: 85405\r\n\r\n");
     header.append("Content-Type: image/" + getExtension("folhas.png") + "\r\n");
-2
+
     std::string img_as_binary((std::istreambuf_iterator<char>(img_file)), std::istreambuf_iterator<char>());
     write(this->fd , header.c_str() , header.length());
     write(this->fd , img_as_binary.c_str(), img_as_binary.length());
 
 } */
+
+void Client::sendResponse(std::string path)
+{
+    std::cout << path << std::endl;
+    std::ifstream file(path.c_str(), std::ios::binary | std::ios::in);
+
+    if (!file.is_open())
+    {
+        write(this->fd, server.getErrorResponse().c_str(), server.getErrorResponse().length());
+        request.clear();
+        return ;
+    }
+
+    std::string response(getHeader(path));
+
+    std::cout << response << std::endl;
+    response.append((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());	
+
+    write(this->fd, response.c_str(), response.length());
+    request.clear();
+}
 
 void Client::response()
 {
@@ -84,26 +150,14 @@ void Client::response()
     request_sent = true;
 
     parseRequest();
+    
+    std::string root = server.getRoot();
+    std::string path = this->page;
+    resolveResponse(root, path, 0);
     /* if (type == FAVICON)
     {
         responseFavIcon();
         return;
     }
     */
-    std::string path_to_file = getPathToPage();
-    std::ifstream file(path_to_file.c_str(), std::ios::binary | std::ios::in);
-
-    if (!file.is_open())
-    {
-        write(this->fd , server.getErrorResponse().c_str() , server.getErrorResponse().length());
-        request.clear();
-        return ;
-    }
-
-    std::string header(getHeader(path_to_file));
-
-    header.append((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());	
-
-    write(this->fd , header.c_str() , header.length());
-    request.clear();
 }

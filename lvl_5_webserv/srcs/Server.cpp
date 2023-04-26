@@ -53,15 +53,14 @@ Server::Server(std::map<std::string, std::string>& parameters)
     this->port = parsePortNumber(parameters["listen"]);
     this->serverName = parameters["server_name"];
     this->host = parameters["host"];
+    this->root = parameters["root"];
 
     std::string& temp = parameters["error_page"];
-
-    // RELATIVE TO ROOT
-    if (access(temp.c_str(), R_OK) != 0)
+    if (access(std::string(this->root + temp.c_str()).c_str(), R_OK) != 0) {
         throw WebServ::ParserException("invalid error_page");
+    }
 
     this->errorPagePath = temp;
-    this->root = parameters["root"];
     this->index = parameters["index"];
     this->clientMaxBodySize = parseClientMaxBodySize(parameters["client_max_body_size"]);
 
