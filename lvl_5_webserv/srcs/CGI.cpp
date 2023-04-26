@@ -3,140 +3,53 @@
 #include <sstream>
 #include <unistd.h>
 
-#define MAX_BUFFER_SIZE 1000
-
 using std::cout;
 using std::cerr;
 using std::endl;
 
-CGI::CGI(Server parameters)
+CGI::CGI(std::string request)
 {
-	indexFile = parameters.getIndex();
-	root = parameters.getRoot();
-
-	//TODO: ask Nuno if there is a getListing
-
-	std::map<std::string, location_t>::iterator it = parameters.locations.find("")
-	if (parameters.locations.find() == "on")
-	directoryListingEnabled = true;
-	// else
-	// 	directoryListingEnabled = false;
-
-	cout << "Index: " << indexFile << endl;
-	cout << "Root: " << root << endl;
-	cout << "Dir listing: " << directoryListingEnabled << endl;
+	parseFileFromRequest(request);
 
 }
 
-bool CGI::isRegularFile(const char *path)
+std::string CGI::getExtension()
 {
-	struct stat st;
-	if (stat(path, &st) != 0) {
-		return false;
-	}
-	return S_ISREG(st.st_mode);
+	std::string ext;
+
+	int pos = filename.find('.');
+	ext = filename.substr(filename.size() - pos);
+	cout << "Ext: " << ext << endl;
+
+	return ext;
 }
 
-
-bool CGI::isDirectory(const char *path)
+void CGI::parseFileFromRequest(std::string request)
 {
-	if (access(path, F_OK) != 0) {
-		return false;  // path does not exist
+	sstream tmp;
+	// Read the HTTP request from stdin
+	getline(std::cin, request);
+
+	// Parse the request URI from the request line
+	std::string uri;
+	size_t pos1 = request.find(' ');
+	size_t pos2 = request.find(' ', pos1+1);
+	if (pos1 != std::string::npos && pos2 != std::string::npos) {
+		uri = request.substr(pos1+1, pos2-pos1-1);
 	}
 
-	struct stat fileStat;
-	if (stat(path, &fileStat) == 0) {
-		return S_ISDIR(fileStat.st_mode);
-	}
-	return false;
-}
-
-void CGI::handleDirectoryListing(const std::string& path)
-{
-	// Generate directory listing HTML
-	std::string html = "<html><head><title>Index of " + path + "</title></head><body>\n";
-	html += "<h1>Index of " + path + "</h1>\n";
-	html += "<table>\n";
-	html += "<tr><th>Name</th><th>Last Modified</th><th>Size</th></tr>\n";
-
-	DIR* dir = opendir(path.c_str());
-	struct dirent* entry;
-
-	while ((entry = readdir(dir)) != NULL)
-	{
-		std::string name = entry->d_name;
-		std::string full_path = path + "/" + name;
-		struct stat st;
-
-		if (stat(full_path.c_str(), &st) == -1)
-		{
-			continue;
-		}
-
-		std::string modified = getTimeStamp();
-		uint64_t	toConvSize = isRegularFile(full_path.c_str()) ? st.st_size : 0;
-
-		std::stringstream ss;
-		ss << toConvSize;
-		std::string size = ss.str();
-
-
-		html += "<tr><td><a href=\"" + name + "\">" + name + "</a></td><td>" + modified + "</td><td>" + size + "</td></tr>\n";
-		html += "</table>\n";
-		html += "</body></html>\n";
-
-		closedir(dir);
-
-		// Send response
-		// TODO create response class
-		// HttpResponse response;
-		// response.status = HTTP_STATUS_OK;
-		// response.content_type = "text/html";
-		// response.content = html;
-		// TODO create general response delivery function
-		// sendResponse(connection, response);
-	}
-}
-
-void	CGI::dirListing(std::string requestedPath)
-{
-	directoryListingEnabled = true;
-
-	// string requestedPath = "/home/Flirt/Desktop/Projects_42/Webserver/lvl_5_webserv";
-	struct stat fileStat;
-	if (stat(requestedPath.c_str(), &fileStat) < 0) {
-		// file does not exist
-		cout << "File does not exist" << endl;
-		// ! throw
+	// Extract the filename from the URI
+	std::string filename;
+	size_t pos = uri.find('?');
+	if (pos != std::string::npos) {
+		filename = uri.substr(0, pos);
+	} else {
+		filename = uri;
 	}
 
-	if (isDirectory(requestedPath.c_str()))
-	{
-		// requested path is a directory
-		if (directoryListingEnabled)
-			// send directory listing HTML response
-			handleDirectoryListing(requestedPath);
-		else
-			// send 403 Forbidden response
-			std::string response = "HTTP/1.1 403 Forbidden\r\n\r\n";
-	}
-	else if (isRegularFile(requestedPath.c_str()))
-	{
-		// requested path is a file
-		cout << "It's a file! :)" << endl;
-		// ...
-	}
-	else
-	{
-		// Check if path is a directory
-		if (!isDirectory(requestedPath.c_str())) {
-			//! throw(HTTP_STATUS_NOT_FOUND);
-			return;
-		}
-		// requested path doesn't exist
-		cout << "requested path doesn't exist" << endl;
-		//! throw
-	}
+	// Print the filename
+	// cout << "Content-Type: text/plain\n\n";
+	cout << "Filename: " << filename << endl;
 }
 
 // void execute_cgi(int client_fd, const char* cgi_path, const char* path_info, const char* method, const char* query_string, const char* content_type, const char* content_length)

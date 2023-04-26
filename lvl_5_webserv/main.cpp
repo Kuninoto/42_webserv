@@ -162,7 +162,9 @@ bool g_stopServer = false;
 
 int main()
 {
-	std::vector<Server> parameters = parseConfigFile("/home/Flirt/Desktop/Projects_42/Webserver/lvl_5_webserv/config/inception.conf");
+	std::string tmp("POST /scripts/test.py HTTP/1.1\nHost: www.example.com\nContent-Type: application/x-www-form-urlencoded\nContent-Length: 27\n\nname=John+Doe&age=30&gender=M\n");
 
-	CGI cgi(parameters.at(0));
+	cout << "--------------------" << endl;
+	CGI cgi(tmp);
+	cout << "--------------------" << endl;
 }

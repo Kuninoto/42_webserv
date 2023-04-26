@@ -12,33 +12,26 @@
 # include <sys/wait.h>
 
 # include "libwebserv.hpp"
-// # include "utils.hpp"
 
 class Lexer;
 
 class CGI {
 
 	private:
+		// Functions
 		CGI(void);
-		std::map<std::string, std::vector<std::string> > routeMethods;
-		std::map<std::string, std::string> routePaths;
-		std::string response;
+		
+		void parseFileFromRequest(std::string request);
+		std::string getExtension();
 
-		//
-		std::string indexFile;
-		bool directoryListingEnabled;
-		std::string root;
-		std::string methods;
-		std::map<std::string, std::string> config;
+		// Variables
+		std::string filename;
 
 	public:
-		CGI(Server parameters);
+		CGI(std::string request);
 		~CGI(void) {};
 
-		bool isRegularFile(const char *path);
-		void dirListing(std::string requestedPath);
-		void handleDirectoryListing(const std::string& path);
-		bool isDirectory(const char *path);
+
 
 };
 
