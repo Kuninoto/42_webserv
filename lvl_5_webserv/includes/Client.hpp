@@ -40,16 +40,21 @@ class Client {
         Server server;
 
         int fd;
-        bool request_sent;
 
+        bool request_sent;
         e_methods method;
-        e_types type;
+        
         std::string request;
         std::string page;
         
         void parseRequest();
+        void resolveResponse(std::string& root, std::string& path, size_t safety_cap);
         void responseFavIcon();
-        std::string getPathToPage();
+        void sendResponse(std::string path);
+        std::string resolvePathAndLocation();
+        void sendDirectoryListing(std::string path);
+
+
 };
 
 #endif // CLIENT_HPP

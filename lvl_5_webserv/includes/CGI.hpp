@@ -26,10 +26,8 @@ class CGI {
 		CGI(void) {defaultFileName = "index.html";};
 		~CGI(void) {};
 
-		bool isRegularFile(const char *path);
 		void dirListing(std::string requestedPath);
 		void handleDirectoryListing(const std::string& path);
-		bool isDirectory(const char *path);
 
 };
 

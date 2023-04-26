@@ -7,7 +7,7 @@
 #include <memory.h>
 
 locationPair parseLocation(const std::map<std::string, std::string>& lexerParameters,
-                                                 const std::string& locationPath)
+                                                 std::string& locationPath)
 {
     location_t locationStruct;
     bzero(&locationStruct, sizeof(location_t));
@@ -20,15 +20,19 @@ locationPair parseLocation(const std::map<std::string, std::string>& lexerParame
         locationStruct.redirect = lexerParameters.find("return")->second;
     if (lexerParameters.count("auto_index") > 0)
         locationStruct.auto_index = lexerParameters.find("auto_index")->second == "on" ? true : false;
+    if (lexerParameters.count("try_file") > 0)
+        locationStruct.try_file = lexerParameters.find("try_file")->second;
     if (lexerParameters.count("cgi_path") > 0)
     {
         std::string temp = lexerParameters.find("cgi_path")->second;
-        if (access(temp.c_str(), X_OK) != 0)
+        if (access(temp.c_str(), X_OK) != 0) {
             throw WebServ::ParserException("invalid cgi_path");
+        }
         locationStruct.cgi_path = temp;
     }
     if (lexerParameters.count("cgi_ext") > 0)
         locationStruct.cgi_ext = lexerParameters.find("cgi_ext")->second;
+    trimStr(locationPath, " ");
     return std::make_pair<std::string, location_t>(locationPath, locationStruct);
 }
 
@@ -44,7 +48,6 @@ std::vector<Server> parseConfigFile(std::string filename)
 {
 	Lexer lexer(filename);
 	std::vector<Server> servers;
-    size_t i = 0;
 
     // Parse Server scopes
     Token token = lexer.nextToken();
@@ -77,18 +80,15 @@ std::vector<Server> parseConfigFile(std::string filename)
                     lexer.parameters["location"] = temp;
                 }
                 readLocationBlock(lexer, token);
-                servers.at(i).locations.insert(parseLocation(lexer.parameters, lexer.parameters["location"]));
+                servers.back().locations.insert(parseLocation(lexer.parameters, lexer.parameters["location"]));
                 lexer.parameters.clear();
             }
             else if (curly_brackets == 0 && !hasLocation)
             {
                 servers.push_back(Server(lexer.parameters));
-                i += 1;
                 break;
             }            
-            else if (curly_brackets == 0)
-            {
-                i += 1;
+            else if (curly_brackets == 0) {
                 break;
             }
             token = lexer.nextToken();

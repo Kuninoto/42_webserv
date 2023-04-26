@@ -6,29 +6,6 @@ using std::cout;
 using std::cerr;
 using std::endl;
 
-bool CGI::isRegularFile(const char *path)
-{
-	struct stat st;
-	if (stat(path, &st) != 0) {
-		return false;
-	}
-	return S_ISREG(st.st_mode);
-}
-
-
-bool CGI::isDirectory(const char *path)
-{
-	if (access(path, F_OK) != 0) {
-		return false;  // path does not exist
-	}
-
-	struct stat fileStat;
-	if (stat(path, &fileStat) == 0) {
-		return S_ISDIR(fileStat.st_mode);
-	}
-	return false;
-}
-
 void CGI::handleDirectoryListing(const std::string& path)
 {
 	// Generate directory listing HTML

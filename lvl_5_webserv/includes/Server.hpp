@@ -16,6 +16,7 @@ typedef struct location_s {
     std::vector<std::string> allowed_methods;
     std::string redirect;
     bool auto_index;
+    std::string try_file;
     std::string cgi_path;
     std::string cgi_ext;
 }               location_t;
@@ -34,7 +35,6 @@ class Server {
         const std::string& getServerName(void) const { return this->serverName; };
         const std::string& getErrorPagePath(void) const { return this->errorPagePath; };
         const std::string& getRoot(void) const { return this->root; };
-        const std::string& getLocationRoot(const std::string& key) { return this->locations[key].root; };
         const locationMap& getLocations() const { return this->locations; };
         std::string getErrorResponse(void){ return this->error_response; };
         size_t getMaxBodySize(void) const { return this->clientMaxBodySize; };

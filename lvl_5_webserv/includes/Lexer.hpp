@@ -1,6 +1,9 @@
-#include <map>
-#include <string>
-#include <fstream>
+#ifndef LEXER_HPP
+# define LEXER_HPP
+
+# include <map>
+# include <string>
+# include <fstream>
 
 enum TokenType {
     KEYWORD,
@@ -40,5 +43,6 @@ class Lexer {
         void consumeWhiteSpace(void);
         void consumeComment(void);
         void consumeKeyword(std::string& token_value);
-        void consumeParameter(std::string& token_value);
 };
+
+#endif // LEXER_HPP

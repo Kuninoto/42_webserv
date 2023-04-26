@@ -3,10 +3,36 @@
 # include <fstream>
 # include <iostream>
 # include <sstream>
+# include <dirent.h>
+# include <sys/stat.h>
+# include <unistd.h>
+
+
+bool isRegularFile(const char *path)
+{
+	struct stat st;
+	if (stat(path, &st) == 0
+    && S_ISREG(st.st_mode)) {
+		return true;
+	}
+	return false;
+}
+
+
+bool isDirectory(const char *path)
+{
+	struct stat st;
+    
+    if (stat(path,&st) != 0) {
+        return false;
+    }
+
+	return st.st_mode & S_IFDIR;
+}
 
 std::string getFileType(std::string file)
 {
-    std::map<std::string, std::string> types;
+    static std::map<std::string, std::string> types;
 
     types["jpg"] = "image/jpg";
     types["png"] = "image/png";

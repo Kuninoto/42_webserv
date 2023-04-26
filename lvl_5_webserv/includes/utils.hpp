@@ -4,6 +4,7 @@
 # include <vector>
 # include <string>
 # include <iostream>
+# include <sstream>
 
 # define RESET "\x1B[0m"
 # define RED "\x1B[31m"
@@ -21,6 +22,8 @@ std::vector<T> sliceVec(std::vector<T>& vec, unsigned int start_idx, unsigned in
 const std::string getTimeStamp(void);
 const std::string getTime(void);
 
+bool isRegularFile(const char *path);
+bool isDirectory(const char *path);
 std::string getFileType(std::string file);
 std::string getFileSize(std::string file);
 std::string getHeader(std::string file);
@@ -30,5 +33,16 @@ static inline void messageLog(const std::string& message, const char *color, boo
     if (error) std::cerr << color << "["<< getTime() << "] " << message << RESET << std::endl;
     else std::cout << color << "["<< getTime() << "] " << message << RESET << std::endl;
 };
+
+template <typename T>
+static std::string ft_ntos(const T num)
+{
+    std::string as_str;
+    std::stringstream ss;
+
+    ss << num;
+    ss >> as_str;
+    return as_str;
+}
 
 #endif // UTILS_HPP

@@ -6,13 +6,13 @@
 
 bool isValidKeyword(const std::string& value)
 {
-    static const std::string keywords[15] = {"server", "listen", "host", "index", 
+    static const std::string keywords[16] = {"server", "listen", "host", "index", 
                                            "server_name", "root", "error_page",
                                            "location", "client_max_body_size",
                                            "cgi_path", "cgi_ext", "auto_index",
-                                           "allow_methods", "return"};
+                                           "allow_methods", "return", "try_file"};
 
-    for (size_t i = 0; i < 14; i += 1) {
+    for (size_t i = 0; i < 16; i += 1) {
         if (value == keywords[i]) {
             return true;
         }
@@ -30,6 +30,7 @@ Lexer::Lexer(const std::string& filename)
 
 Token Lexer::nextToken(void)
 {
+
     std::string value;
 
     // Skip whitespace and comments
@@ -44,18 +45,21 @@ Token Lexer::nextToken(void)
             consumeComment();
             continue;
         }
+
         if (current_char == '{') {
             current_char = file.get();
             return (Token){ LEFT_CURLY_BRACKET, "{" };
         }
+
         if (current_char == '}') {
             current_char = file.get();
             return (Token){ RIGHT_CURLY_BRACKET, "}" };
         }
+        
         if (isalpha(current_char)) {
             value += current_char;
             consumeKeyword(value);
-            return (Token){ KEYWORD, value};
+            return (Token){ KEYWORD, value };
         }
         value += current_char;
         current_char = file.get();
