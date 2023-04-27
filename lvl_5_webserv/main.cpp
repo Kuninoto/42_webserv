@@ -162,9 +162,23 @@ bool g_stopServer = false;
 
 int main()
 {
-	std::string tmp("POST /scripts/test.py HTTP/1.1\nHost: www.example.com\nContent-Type: application/x-www-form-urlencoded\nContent-Length: 27\n\nname=John+Doe&age=30&gender=M\n");
+	try
+	{
+		std::string tmp("POST /scripts/test.pyy HTTP/1.1\nHost: www.example.com\nContent-Type: application/x-www-form-urlencoded\nContent-Length: 27\n\nname=John+Doe&age=30&gender=M\n");
 
-	cout << "--------------------" << endl;
-	CGI cgi(tmp);
-	cout << "--------------------" << endl;
+		cout << "--------Debug--------" << endl;
+		cout << "---------------------" << endl;
+		setenv("PATH_INFO", "/home/Flirt/Desktop/Projects_42/Webserver/lvl_5_webserv", 0);
+
+		CGI cgi(tmp);
+		cout << "Expected output: \"Hello bitches!!!!!!!!\"" << endl;
+		cout << "Script output  : \"" << cgi.response << "\"" << endl;
+		cout << "---------------------" << endl;
+		cout << "------Finished-------" << endl;
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
+	}
+
 }
