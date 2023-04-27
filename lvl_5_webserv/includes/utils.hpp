@@ -26,7 +26,8 @@ bool isRegularFile(const char *path);
 bool isDirectory(const char *path);
 std::string getFileType(std::string file);
 std::string getFileSize(std::string file);
-std::string getHeader(std::string file);
+std::string getHeader(std::string file, std::string& code);
+std::string getResponseBoilerPlate(const std::string& code, const std::string& title, const std::string& body); 
 
 static inline void messageLog(const std::string& message, const char *color, bool error)
 {
