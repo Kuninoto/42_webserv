@@ -9,228 +9,205 @@ using std::endl;
 
 CGI::CGI(std::string request)
 {
-	parseFileFromRequest(request);
+	if (!runCGI(request))
+		throw(CGIException(error));
 
+	//! Below is for debbuging, delete when done
+	cout << "Method: " << method << endl;
+	cout << "Filename: " << filename << endl;
+	cout << "Ext: " << extension << endl;
+	cout << "File path: " << filePath << endl;
+	cout << "File is valid: " << validPath() << endl;
+	cout << "Extension is valid: " << validExtension() << endl;
 }
 
-std::string CGI::getExtension()
+/**
+ * @brief function to run the CGI process
+ * 
+ * @param request HTTP request header 
+ * @return true if operation was a success
+ * @return false if something went wrong
+ */
+bool CGI::runCGI(std::string request)
+{
+	parseFileFromRequest(request);
+	filePath = getenv("PATH_INFO") + filename;
+	extension = getExtension();
+	setExtensions();
+	if (!validPath())
+	{
+		error = "Error: Invalid file";
+		return false;
+	}
+	if (!validExtension())
+	{
+		error = "Error: Invalid file type";
+		return false;
+	}
+
+	try
+	{
+		runScript();
+	}
+	catch(const std::exception& e)
+	{
+		error = e.what();
+		return false;
+	}
+	eraseNewline();
+
+	return true;
+}
+
+/**
+ * @brief checks if filePath is a valid path
+ * 
+ * @return true if valid
+ * @return false if not valid
+ */
+bool	CGI::validPath()
+{
+	struct stat buffer;
+	return (stat(filePath.c_str(), &buffer) == 0);
+}
+
+/**
+ * @brief Checks if file extension is valid
+ * 
+ * @param ext file extension
+ * @return true if valid
+ * @return false if not valid
+ */
+bool	CGI::validExtension()
+{
+	std::vector<std::string>::iterator it = find(allowedExts.begin(), allowedExts.end(), extension);
+
+	if (it != allowedExts.end() && (strcmp(it->c_str(), extension.c_str()) == 0))
+		return true;
+	else
+		return false;
+}
+
+/**
+ * @brief Returns the extension of the file stored in "filename" variable
+ * 
+ * @return std::string 
+ */
+std::string	CGI::getExtension()
 {
 	std::string ext;
 
-	int pos = filename.find('.');
-	ext = filename.substr(filename.size() - pos);
-	cout << "Ext: " << ext << endl;
+	int pos = filename.find_last_of('.');
+	ext = filename.substr(pos + 1);
 
 	return ext;
 }
 
-void CGI::parseFileFromRequest(std::string request)
+/**
+ * @brief Parses the HTTP request and stores information into variables
+ * 
+ * @param request is the HTTP request header
+ */
+void	CGI::parseFileFromRequest(std::string request)
 {
-	sstream tmp;
-	// Read the HTTP request from stdin
-	getline(std::cin, request);
+	std::stringstream ss(request);
 
-	// Parse the request URI from the request line
-	std::string uri;
-	size_t pos1 = request.find(' ');
-	size_t pos2 = request.find(' ', pos1+1);
-	if (pos1 != std::string::npos && pos2 != std::string::npos) {
-		uri = request.substr(pos1+1, pos2-pos1-1);
-	}
-
-	// Extract the filename from the URI
-	std::string filename;
-	size_t pos = uri.find('?');
-	if (pos != std::string::npos) {
-		filename = uri.substr(0, pos);
-	} else {
-		filename = uri;
-	}
-
-	// Print the filename
-	// cout << "Content-Type: text/plain\n\n";
-	cout << "Filename: " << filename << endl;
+	// Read the HTTP request and save the first and second word
+	getline(ss, method, ' ');
+	getline(ss, filename, ' ');
 }
 
-// void execute_cgi(int client_fd, const char* cgi_path, const char* path_info, const char* method, const char* query_string, const char* content_type, const char* content_length)
-// {
-// 	int to_cgi[2], from_cgi[2];
-// 	pid_t pid;
+/**
+ * @brief run the script and save the output into response
+ * 
+ */
+void	CGI::runScript()
+{
+	int pipefd[2];
+	char buffer[128];
+	pid_t pid;
 
-// 	// Create pipe for communication with CGI process
-// 	if (pipe(to_cgi) < 0 || pipe(from_cgi) < 0)
-// 	{
-// 		perror("pipe");
-// 		exit(EXIT_FAILURE);
-// 	}
+	if (pipe(pipefd) == -1)
+		throw(CGIException("Error: Pipe failed"));
 
-// 	// Fork a new process for the CGI program
-// 	pid = fork();
-// 	if (pid < 0)
-// 	{
-// 		perror("fork");
-// 		exit(EXIT_FAILURE);
-// 	}
-// 	else if (pid == 0)
-// 	{
-// 		// Child process - redirect stdin, stdout, stderr to pipes
-// 		dup2(to_cgi[0], STDIN_FILENO);
-// 		dup2(from_cgi[1], STDOUT_FILENO);
-// 		dup2(from_cgi[1], STDERR_FILENO);
+	pid = fork();
 
-// 		// Close unused ends of pipes
-// 		close(to_cgi[1]);
-// 		close(from_cgi[0]);
+	if (pid == -1)
+		throw(CGIException("Error: Fork failed"));
+	else if (pid == 0) {
+		close(pipefd[0]);
+		dup2(pipefd[1], STDOUT_FILENO);
+		dup2(pipefd[1], STDERR_FILENO);
+		close(pipefd[1]);
+		char **args = chooseExtension();
+		execve(runner.c_str(), (char* const*)args, NULL);
+		delete args;
+		_exit(127);
+	}
+	else {
+		close(pipefd[1]);
+		int status;
+		while (waitpid(pid, &status, 0) == -1);
+		while (read(pipefd[0], buffer, sizeof(buffer)) != 0) {
+			response += buffer;
+		}
+		close(pipefd[0]);
+	}
+}
 
-// 		// Set environment variables for CGI program
-// 		setenv("REQUEST_METHOD", method, 1);
-// 		setenv("SCRIPT_FILENAME", cgi_path, 1);
-// 		setenv("PATH_INFO", path_info, 1);
-// 		setenv("QUERY_STRING", query_string, 1);
-// 		setenv("CONTENT_TYPE", content_type, 1);
-// 		setenv("CONTENT_LENGTH", content_length, 1);
+/**
+ * @brief erases the last '\n' in the string if it exists
+ * 
+ */
+void	CGI::eraseNewline()
+{
+	if (response.at(response.length() - 1) == '\n')
+		response.erase(response.find_last_of('\n'), 1);
+}
 
-// 		// Execute the CGI program
-// 		execl(cgi_path, cgi_path, NULL);
+/**
+ * @brief defines allowed/recognized extensions for the cgi
+ * 
+ */
+void CGI::setExtensions()
+{
+	allowedExts.push_back("php");
+	allowedExts.push_back("py");
+	allowedExts.push_back("sh");
+}
 
-// 		// Should never reach here unless execl fails
-// 		perror("execl");
-// 		exit(EXIT_FAILURE);
-// 	}
-// 	else
-// 	{
-// 		// Parent process - close unused ends of pipes
-// 		close(to_cgi[0]);
-// 		close(from_cgi[1]);
+/**
+ * @brief chooses the right way to run the script
+ * 
+ * @return char* are the arguments for execve
+ */
+char **	CGI::chooseExtension()
+{
+	char** args;
 
-// 		// If the request is POST, write the content to the pipe to the CGI process
-// 		if (strcmp(method, "POST") == 0)
-// 		{
-// 			char buffer[MAX_BUFFER_SIZE];
-// 			int bytes_read;
+	if (extension == "py") {
+		runner = "/usr/bin/python3";
+		args = new char*[3];
+		args[0] = (char *)"python3";
+		args[1] = (char *)filePath.c_str();
+		args[2] = NULL;
+	}
+	
+	if (extension == "php") {
+		runner = "/usr/bin/php";
+		args = new char*[3];
+		args[0] = (char *)"php";
+		args[1] = (char *)filePath.c_str();
+		args[2] = NULL;
+	}
+	
+	if (extension == "sh") {
+		runner = "/usr/bin/bash";
+		args = new char*[3];
+		args[0] = (char *)"bash";
+		args[1] = (char *)filePath.c_str();
+		args[2] = NULL;
+	}
 
-// 			// Read content from client and write to pipe
-// 			while ((bytes_read = read(client_fd, buffer, MAX_BUFFER_SIZE)) > 0)
-// 				write(to_cgi[1], buffer, bytes_read);
-// 		}
-
-// 		// Read output from CGI process and send to client
-// 		char buffer[MAX_BUFFER_SIZE];
-// 		int bytes_read;
-
-// 		while ((bytes_read = read(from_cgi[0], buffer, MAX_BUFFER_SIZE)) > 0)
-// 			write(client_fd, buffer, bytes_read);
-
-// 		// Close remaining ends of pipes and wait for child process to finish
-// 		close(to_cgi[1]);
-// 		close(from_cgi[0]);
-
-// 		int status;
-// 		waitpid(pid, &status, 0);
-
-// 		if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
-// 		{
-// 			// CGI program returned an error status
-// 			fprintf(stderr, "CGI program returned error status %d\n", WEXITSTATUS(status));
-// 		}
-// 	}
-// }
-
-// bool handleCgi(int client_fd, const char* cgi_path, const char* path_info, const char* method, const char* query_string, const char* content_type, const char* content_length)
-// {
-// 	// Get file extension
-// 	std::string pathInfo = std::getenv("PATH_INFO");
-// 	std::string fileExt = pathInfo.substr(pathInfo.rfind(".") + 1);
-
-// 	if (!pathInfo.c_str())
-// 	{
-// 		cout << "MY_ENV_VAR is not set" << endl;
-// 		exit(EXIT_FAILURE);
-// 	}
-
-// 	// Check if file extension is valid for CGI execution
-// 	std::unordered_set<std::string> cgi_exts = {"php", "py", "pl"};
-// 	if (cgi_exts.find(fileExt) == cgi_exts.end()) {
-// 		cout << "File extension not supported" << endl;
-// 		//! throw
-// 		return false;
-// 	}
-
-// 	// Create pipe for communication between parent and child process
-// 	int pipefd[2];
-// 	if (pipe(pipefd) == -1) {
-// 		response += "500\n";
-// 		response += "Internal Server Error\n";
-// 		return true;
-// 	}
-
-// 	// Fork a child process to execute the CGI script
-// 	pid_t pid = fork();
-// 	if (pid == -1) {
-// 		response += "500\n";
-// 		response += "Internal Server Error\n";
-// 		return true;
-// 	}
-
-// 	std::string completePath = root;
-// 	completePath += path_info;
-// 	// Child process
-// 	if (pid == 0) {
-// 		// Set environment variables for CGI script
-// 		setenv("REQUEST_METHOD", method, 1);
-// 		setenv("SCRIPT_FILENAME", completePath.c_str(), 1);
-// 		setenv("QUERY_STRING", query_string, 1);
-// 		setenv("CONTENT_TYPE", content_type, 1);
-// 		setenv("CONTENT_LENGTH", content_length, 1);
-// 		setenv("PATH_INFO", path_info, 1);
-
-// 		// Close read end of pipe
-// 		close(pipefd[0]);
-
-// 		// Redirect STDOUT to write end of pipe
-// 		dup2(pipefd[1], STDOUT_FILENO);
-
-// 		// Execute CGI script
-// 		execl("/usr/bin/php-cgi", "php-cgi", NULL);
-
-// 		// If execl fails, write to pipe to signal error
-// 		write(pipefd[1], "ERROR", 5);
-
-// 		// Exit child process
-// 		exit(EXIT_FAILURE);
-// 	}
-// 	// Parent process
-// 	else {
-// 		// Close write end of pipe
-// 		close(pipefd[1]);
-
-// 		// Wait for child process to finish executing
-// 		int status;
-// 		waitpid(pid, &status, 0);
-
-// 		// Read output from child process
-// 		std::stringstream ss;
-// 		char buffer[1024];
-// 		int bytes_read;
-// 		while ((bytes_read = read(pipefd[0], buffer, sizeof(buffer))) > 0) {
-// 			ss.write(buffer, bytes_read);
-// 		}
-
-// 		// Close read end of pipe
-// 		close(pipefd[0]);
-
-// 		// Set response body to output from CGI script
-// 		response += ss.str();
-
-// 		// Set content type based on file extension
-// 		if (fileExt == "php") {
-// 			response.set_header("Content-Type", "text/html");
-// 		} else if (fileExt == "py") {
-// 			response.set_header("Content-Type", "text/plain");
-// 		} else if (fileExt == "pl") {
-// 			response.set_header("Content-Type", "text/html");
-// 		}
-
-// 		return true;
-// 	}
-// }
+	return args;
+}
