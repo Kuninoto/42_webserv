@@ -9,26 +9,51 @@
 # include <vector>
 # include <map>
 # include <dirent.h>
+# include <sys/wait.h>
+# include <algorithm>
 
-# include "TcpConnection.hpp"
-# include "utils.hpp"
+# include "libwebserv.hpp"
+
+class Lexer;
 
 class CGI {
-
-	private:
-		std::map<std::string, std::vector<std::string> > routeMethods;
-		std::map<std::string, std::string> routePaths;
-		bool directoryListingEnabled;
-		std::string defaultFileName;
-
-
 	public:
-		CGI(void) {defaultFileName = "index.html";};
+		CGI(std::string request);
 		~CGI(void) {};
 
-		void dirListing(std::string requestedPath);
-		void handleDirectoryListing(const std::string& path);
+		std::string response;
 
+	private:
+		// Functions
+		CGI(void);
+		
+		bool runCGI(std::string request);
+		bool validPath(void);
+		bool validExtension(void);
+		void runScript(void);
+		std::string getExtension(void);
+		void parseFileFromRequest(std::string request);
+		void eraseNewline(void);
+		char **chooseExtension(void);
+
+		// Variables
+		std::string method;
+		std::string filename;
+		std::string filePath;
+		std::string extension;
+		std::string runner;
+		std::string error;
 };
+
+	class CGIException : public std::exception {
+		public:
+			CGIException(const std::string& message) : message(message) {};
+
+			virtual const char* what() const throw() {
+				return message.c_str();
+			};
+		private:
+			const std::string& message;
+	};
 
 #endif // CGI_HPP

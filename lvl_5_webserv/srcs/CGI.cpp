@@ -1,95 +1,200 @@
 #include "CGI.hpp"
 #include <iostream>
 #include <sstream>
+#include <unistd.h>
 
 using std::cout;
 using std::cerr;
 using std::endl;
 
-void CGI::handleDirectoryListing(const std::string& path)
+CGI::CGI(std::string request)
 {
-	// Generate directory listing HTML
-	std::string html = "<html><head><title>Index of " + path + "</title></head><body>\n";
-	html += "<h1>Index of " + path + "</h1>\n";
-	html += "<table>\n";
-	html += "<tr><th>Name</th><th>Last Modified</th><th>Size</th></tr>\n";
+	if (!runCGI(request))
+		throw (CGIException(error));
 
-	DIR* dir = opendir(path.c_str());
-	struct dirent* entry;
-
-	while ((entry = readdir(dir)) != NULL)
-	{
-		std::string name = entry->d_name;
-		std::string full_path = path + "/" + name;
-		struct stat st;
-
-		if (stat(full_path.c_str(), &st) == -1)
-		{
-			continue;
-		}
-
-		std::string modified = getTimeStamp();
-		uint64_t	toConvSize = isRegularFile(full_path.c_str()) ? st.st_size : 0;
-
-		std::stringstream ss;
-		ss << toConvSize;
-		std::string size = ss.str();
-
-
-		html += "<tr><td><a href=\"" + name + "\">" + name + "</a></td><td>" + modified + "</td><td>" + size + "</td></tr>\n";
-		html += "</table>\n";
-		html += "</body></html>\n";
-
-		closedir(dir);
-
-		// Send response
-		// TODO create response class
-		// HttpResponse response;
-		// response.status = HTTP_STATUS_OK;
-		// response.content_type = "text/html";
-		// response.content = html;
-		// TODO create general response delivery function
-		// sendResponse(connection, response);
-	}
+	//! Below is for debbuging, delete when done
+	cout << "Method: " << method << endl;
+	cout << "Filename: " << filename << endl;
+	cout << "Ext: " << extension << endl;
+	cout << "File path: " << filePath << endl;
+	cout << "File is valid: " << validPath() << endl;
+	cout << "Extension is valid: " << validExtension() << endl;
 }
 
-void	CGI::dirListing(std::string requestedPath)
+/**
+ * @brief function to run the CGI process
+ * 
+ * @param request HTTP request header 
+ * @return true if operation was a success
+ * @return false if something went wrong
+ */
+bool CGI::runCGI(std::string request)
 {
-	directoryListingEnabled = true;
-
-	// string requestedPath = "/home/Flirt/Desktop/Projects_42/Webserver/lvl_5_webserv";
-	struct stat fileStat;
-	if (stat(requestedPath.c_str(), &fileStat) < 0) {
-		// file does not exist
-		cout << "File does not exist" << endl;
-		// ! throw
+	this->parseFileFromRequest(request);
+	this->filePath = getenv("PATH_INFO") + filename;
+	this->extension = this->getExtension();
+	if (!this->validPath())
+	{
+		this->error = "Error: Invalid file";
+		return false;
+	}
+	if (!this->validExtension())
+	{
+		this->error = "Error: Invalid file type";
+		return false;
 	}
 
-	if (isDirectory(requestedPath.c_str()))
-	{
-		// requested path is a directory
-		if (directoryListingEnabled)
-			// send directory listing HTML response
-			handleDirectoryListing(requestedPath);
-		else
-			// send 403 Forbidden response
-			std::string response = "HTTP/1.1 403 Forbidden\r\n\r\n";
+	try {
+		this->runScript();
 	}
-	else if (isRegularFile(requestedPath.c_str()))
+	catch (const std::exception& e) {
+		this->error = e.what();
+		return false;
+	}
+	this->eraseNewline();
+	return true;
+}
+
+/**
+ * @brief checks if filePath is a valid path
+ * 
+ * @return true if valid
+ * @return false if not valid
+ */
+bool CGI::validPath(void)
+{
+	struct stat buffer;
+	return (stat(filePath.c_str(), &buffer) == 0);
+}
+
+/**
+ * @brief Checks if file extension is valid
+ * 
+ * @param ext file extension
+ * @return true if valid
+ * @return false if not valid
+ */
+bool CGI::validExtension(void)
+{
+	if (extension == "py" || extension == "php" || extension == "sh")
+		return true;
+	return false;
+}
+
+/**
+ * @brief Returns the extension of the file stored in "filename" variable
+ * 
+ * @return std::string 
+ */
+std::string	CGI::getExtension(void)
+{
+	std::string ext;
+
+	int pos = this->filename.find_last_of('.');
+	// if (pos == std::string::npos)
+	//	error
+	ext = this->filename.substr(pos + 1);
+	return ext;
+}
+
+/**
+ * @brief Parses the HTTP request and stores information into variables
+ * 
+ * @param request is the HTTP request header
+ */
+void	CGI::parseFileFromRequest(std::string request)
+{
+	std::stringstream ss(request);
+
+	// Read the HTTP request and save the first and second word
+	getline(ss, method, ' ');
+	getline(ss, filename, ' ');
+}
+
+/**
+ * @brief run the script and save the output into response
+ * 
+ */
+void	CGI::runScript(void)
+{
+	int pipefd[2];
+	char buffer[128];
+	pid_t pid;
+
+	if (pipe(pipefd) == -1)
+		throw (CGIException("Error: Pipe() failed"));
+
+	pid = fork();
+	if (pid == -1)
+		throw (CGIException("Error: Fork() failed"));
+	// child
+	if (pid == 0)
 	{
-		// requested path is a file
-		cout << "It's a file! :)" << endl;
-		// ...
+		close(pipefd[0]);
+		dup2(pipefd[1], STDOUT_FILENO);
+		dup2(pipefd[1], STDERR_FILENO);
+		close(pipefd[1]);
+		char **args = chooseExtension();
+		if (execve(runner.c_str(), (char* const*)args, NULL) == -1)
+			throw (CGIException("Error: Execve() failed"));
+		delete args;
+		exit(127);
 	}
 	else
 	{
-		// Check if path is a directory
-		if (!isDirectory(requestedPath.c_str())) {
-			//! throw(HTTP_STATUS_NOT_FOUND);
-			return;
+		close(pipefd[1]);
+		int status;
+		while (waitpid(pid, &status, 0) == -1)
+			;
+		while (read(pipefd[0], buffer, sizeof(buffer)) != 0) {
+			response += buffer;
 		}
-		// requested path doesn't exist
-		cout << "requested path doesn't exist" << endl;
-		//! throw
+		close(pipefd[0]);
 	}
+}
+
+/**
+ * @brief erases the last '\n' in the string if it exists
+ * 
+ */
+void	CGI::eraseNewline(void)
+{
+	if (response.at(response.length() - 1) == '\n')
+		response.erase(response.find_last_of('\n'), 1);
+}
+
+/**
+ * @brief chooses the right way to run the script
+ * 
+ * @return char* are the arguments for execve
+ */
+char **CGI::chooseExtension(void)
+{
+	char **args;
+
+	if (extension == "py") {
+		runner = "/usr/bin/python3";
+		args = new char*[3];
+		args[0] = (char *)"python3";
+		args[1] = (char *)filePath.c_str();
+		args[2] = NULL;
+	}
+	
+	if (extension == "php") {
+		runner = "/usr/bin/php";
+		args = new char*[3];
+		args[0] = (char *)"php";
+		args[1] = (char *)filePath.c_str();
+		args[2] = NULL;
+	}
+	
+	if (extension == "sh") {
+		runner = "/usr/bin/bash";
+		args = new char*[3];
+		args[0] = (char *)"bash";
+		args[1] = (char *)filePath.c_str();
+		args[2] = NULL;
+	}
+
+	return args;
 }
