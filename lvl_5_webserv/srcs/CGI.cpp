@@ -4,7 +4,6 @@
 #include <unistd.h>
 
 using std::cout;
-using std::cerr;
 using std::endl;
 
 CGI::CGI(std::string request)
@@ -17,8 +16,8 @@ CGI::CGI(std::string request)
 	cout << "Filename: " << filename << endl;
 	cout << "Ext: " << extension << endl;
 	cout << "File path: " << filePath << endl;
-	cout << "File is valid: " << validPath() << endl;
-	cout << "Extension is valid: " << validExtension() << endl;
+	cout << "File is valid: " << "yes" << endl;
+	cout << "Extension is valid: " << "yes" << endl;
 }
 
 /**
@@ -28,19 +27,19 @@ CGI::CGI(std::string request)
  * @return true if operation was a success
  * @return false if something went wrong
  */
-bool CGI::runCGI(std::string request)
+bool CGI::runCGI(const std::string& request)
 {
 	this->parseFileFromRequest(request);
-	this->filePath = getenv("PATH_INFO") + filename;
+	this->filePath = getenv("PATH_INFO") + ("/" + filename);
 	this->extension = this->getExtension();
-	if (!this->validPath())
-	{
-		this->error = "Error: Invalid file";
-		return false;
-	}
 	if (!this->validExtension())
 	{
-		this->error = "Error: Invalid file type";
+		this->error = "Invalid file type";
+		return false;
+	}
+	if (!this->validPath())
+	{
+		this->error = "Invalid file";
 		return false;
 	}
 
@@ -51,7 +50,6 @@ bool CGI::runCGI(std::string request)
 		this->error = e.what();
 		return false;
 	}
-	this->eraseNewline();
 	return true;
 }
 
@@ -61,10 +59,8 @@ bool CGI::runCGI(std::string request)
  * @return true if valid
  * @return false if not valid
  */
-bool CGI::validPath(void)
-{
-	struct stat buffer;
-	return (stat(filePath.c_str(), &buffer) == 0);
+bool CGI::validPath(void) {
+	return (access(filePath.c_str(), F_OK) == 0);
 }
 
 /**
@@ -102,7 +98,7 @@ std::string	CGI::getExtension(void)
  * 
  * @param request is the HTTP request header
  */
-void	CGI::parseFileFromRequest(std::string request)
+void CGI::parseFileFromRequest(std::string request)
 {
 	std::stringstream ss(request);
 
@@ -115,28 +111,27 @@ void	CGI::parseFileFromRequest(std::string request)
  * @brief run the script and save the output into response
  * 
  */
-void	CGI::runScript(void)
+void CGI::runScript(void)
 {
 	int pipefd[2];
-	char buffer[128];
+	char buffer[1024];
 	pid_t pid;
 
 	if (pipe(pipefd) == -1)
-		throw (CGIException("Error: Pipe() failed"));
+		throw (CGIException("pipe() failed"));
 
 	pid = fork();
 	if (pid == -1)
-		throw (CGIException("Error: Fork() failed"));
+		throw (CGIException("fork() failed"));
 	// child
 	if (pid == 0)
 	{
 		close(pipefd[0]);
 		dup2(pipefd[1], STDOUT_FILENO);
-		dup2(pipefd[1], STDERR_FILENO);
 		close(pipefd[1]);
 		char **args = chooseExtension();
-		if (execve(runner.c_str(), (char* const*)args, NULL) == -1)
-			throw (CGIException("Error: Execve() failed"));
+		execve(runner.c_str(), args, NULL);
+		// only gets here if execve fails
 		delete args;
 		exit(127);
 	}
@@ -146,21 +141,13 @@ void	CGI::runScript(void)
 		int status;
 		while (waitpid(pid, &status, 0) == -1)
 			;
-		while (read(pipefd[0], buffer, sizeof(buffer)) != 0) {
+		while (read(pipefd[0], &buffer, 1023) != 0)
+		{
 			response += buffer;
+			memset(&buffer, '\0', 1024);
 		}
 		close(pipefd[0]);
 	}
-}
-
-/**
- * @brief erases the last '\n' in the string if it exists
- * 
- */
-void	CGI::eraseNewline(void)
-{
-	if (response.at(response.length() - 1) == '\n')
-		response.erase(response.find_last_of('\n'), 1);
 }
 
 /**
