@@ -36,6 +36,17 @@ class Client {
         
         void response();
 
+        class ClientException : public std::exception {
+    		public:
+				std::string s;
+        		ClientException(std::string ss) : s(ss) {};
+				~ClientException() throw() {}
+    
+    			virtual const char* what() const throw() {
+        			return s.c_str();
+    			};
+		};
+
     private:
         Server server;
 
@@ -50,10 +61,10 @@ class Client {
         void parseRequest();
         void resolveResponse(std::string& root, std::string& path, size_t safety_cap);
         void responseFavIcon();
-        void sendResponse(std::string path);
-        std::string resolvePathAndLocation();
         void sendDirectoryListing(std::string path);
-
+        void sendResponse(std::string path, std::string code);
+        void sendErrorCode(std::string code);
+        std::string resolvePathAndLocation(); 
 
 };
 
