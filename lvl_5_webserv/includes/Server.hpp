@@ -1,15 +1,15 @@
 #ifndef SERVER_HPP
-# define SERVER_HPP
+#define SERVER_HPP
 
-# include <stdint.h>
-# include <string>
-# include <vector>
-# include <map>
-# include <sys/socket.h>
-# include <sstream>
+#include <stdint.h>
+#include <string>
+#include <vector>
+#include <map>
+#include <sys/socket.h>
+#include <sstream>
 
-# define SOCKET_OPEN_ERR "fatal: failed to open socket"
-# define SETSOCKETOPT_ERR "fatal: settockopt() failed"
+#define SOCKET_OPEN_ERR "fatal: failed to open socket"
+#define SETSOCKETOPT_ERR "fatal: settockopt() failed"
 
 typedef struct location_s {
     std::string root;

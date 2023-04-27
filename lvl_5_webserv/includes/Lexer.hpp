@@ -1,9 +1,9 @@
 #ifndef LEXER_HPP
-# define LEXER_HPP
+#define LEXER_HPP
 
-# include <map>
-# include <string>
-# include <fstream>
+#include <map>
+#include <string>
+#include <fstream>
 
 enum TokenType {
     KEYWORD,

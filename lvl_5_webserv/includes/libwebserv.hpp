@@ -1,28 +1,24 @@
 #ifndef LIBWEBSERV_HPP
-# define LIBWEBSERV_HPP
+#define LIBWEBSERV_HPP
 
-# include <cstdlib>
-# include <string>
-# include <unistd.h>
-# include <iostream>
-# include <poll.h>
-# include <memory.h>
-# include <vector>
+#include <cstdlib>
+#include <string>
+#include <unistd.h>
+#include <iostream>
+#include <poll.h>
+#include <memory.h>
+#include <vector>
 
+#include "utils.hpp"
+#include "Lexer.hpp"
+#include "Server.hpp"
+#include "Client.hpp"
+#include "CGI.hpp"
+#include "WebServ.hpp"
 
-# include "utils.hpp"
-# include "Lexer.hpp"
-# include "Server.hpp"
-# include "Client.hpp"
-<<<<<<< HEAD
-# include "WebServ.hpp"
-=======
-# include "CGI.hpp"
->>>>>>> 398659786dbd03dc00546fbcbd41cb78d9409aa7
-
-# define ERROR_MSG_PREFFIX "webserv: error: "
-# define ARGS_ERR "invalid arguments"
-# define POLL_FAIL "fatal: poll() failed"
+#define ERROR_MSG_PREFFIX "webserv: error: "
+#define ARGS_ERR "invalid arguments"
+#define POLL_FAIL "fatal: poll() failed"
 
 /**
  * @brief Writes <error_msg> in the cerr stream followed by an endl.

@@ -1,7 +1,5 @@
 def main():
-	print("Hello bitches!!!!!!!!")
+	print("Hello from test.py!")
 
-if __name__ == "main":
+if __name__ == "__main__":
 	main()
-
-main()

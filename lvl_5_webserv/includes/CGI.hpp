@@ -1,18 +1,18 @@
 #ifndef CGI_HPP
-# define CGI_HPP
+#define CGI_HPP
 
-# include <sys/stat.h>
-# include <cstdlib>
-# include <stdint.h>
-# include <string>
-# include <unistd.h>
-# include <vector>
-# include <map>
-# include <dirent.h>
-# include <sys/wait.h>
-# include <algorithm>
+#include <sys/stat.h>
+#include <cstdlib>
+#include <stdint.h>
+#include <string>
+#include <unistd.h>
+#include <vector>
+#include <map>
+#include <dirent.h>
+#include <sys/wait.h>
+#include <algorithm>
 
-# include "libwebserv.hpp"
+#include "libwebserv.hpp"
 
 class Lexer;
 
@@ -24,19 +24,16 @@ class CGI {
 		std::string response;
 
 	private:
-		// Functions
 		CGI(void);
 		
-		bool runCGI(std::string request);
+		bool runCGI(const std::string& request);
 		bool validPath(void);
 		bool validExtension(void);
 		void runScript(void);
 		std::string getExtension(void);
 		void parseFileFromRequest(std::string request);
-		void eraseNewline(void);
 		char **chooseExtension(void);
 
-		// Variables
 		std::string method;
 		std::string filename;
 		std::string filePath;
