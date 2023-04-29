@@ -65,8 +65,10 @@ bool CGI::getEnvVars()
 		return(retError("PATH_INFO variable missing"));
 	if (this->envVars["SCRIPT_NAME"].empty())
 		return(retError("SCRIPT_NAME variable missing"));
-	if (this->envVars["QUERY_STRING"].empty())
-		return(retError("QUERY_STRING variable missing"));
+	
+	// TODO: understand what to do if variable is not obligatory
+	// if (this->envVars["QUERY_STRING"].empty())
+	// 	return(retError("QUERY_STRING variable missing"));
 
 	return true;
 }
@@ -207,6 +209,10 @@ bool	CGI::retError(std::string message)
 	return false;
 }
 
+/**
+ * @brief parses the query string so that it can be passed as arguments to the script
+ * 
+ */
 void CGI::parseQueryString()
 {
 	std::string value, param;
