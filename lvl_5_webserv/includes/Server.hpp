@@ -38,9 +38,12 @@ class Server {
         const locationMap& getLocations() const { return this->locations; };
         std::string getErrorResponse(void){ return this->error_response; };
         size_t getMaxBodySize(void) const { return this->clientMaxBodySize; };
+        bool getSkipBind(void) { return this->skip_bind; };
 		int getSocketFd(void) const { return this->socket_fd; };
         void addLocation(std::pair<std::string, location_t> locationPair);
 		void createSocket(void);
+
+        void setSkipBind(void) { this->skip_bind = true; };
 
         locationMap locations;
 
@@ -56,6 +59,8 @@ class Server {
         std::string root;
         std::string index;
         size_t clientMaxBodySize;
+
+        bool skip_bind;
 
         std::string error_response;
 
