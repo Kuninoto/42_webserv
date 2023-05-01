@@ -36,6 +36,7 @@ clean:
 
 fclean: clean
 	$(RM) $(NAME)
+	$(RM) ".output"
 
 re: fclean all
 
