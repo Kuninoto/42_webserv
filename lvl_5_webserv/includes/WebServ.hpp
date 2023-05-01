@@ -1,61 +1,52 @@
 #ifndef WEBSERV_HPP
-# define WEBSERV_HPP
+#define WEBSERV_HPP
 
-# include <stdint.h>
-# include <string>
-# include <map>
-# include <signal.h>
-# include <iostream>
-# include <fstream>
-# include "utils.hpp"
+#include <map>
+#include "libwebserv.hpp"
 
 class WebServ {
 	public:
-		WebServ(void);
+		WebServ(std::string filename);
 		~WebServ(void);
 
-		const std::vector<uint16_t>& getPorts(void) const;
+		void addParam(const std::string& param, const std::string& value)
+		{ params[param] = value; }
+	
+		void bootServers(void);
+		void runServers(void);
 
-		void parseConfigFile(std::string file);
+		std::vector<Server> parseConfigFile(std::string filename);
 
-		class NoServerTagException : public std::exception {
-			public:
-				virtual const char* what() const throw() {
-					return "no server keyword";
-				}
+		class ParserException : public std::exception {
+    		public:
+				std::string s;
+        		ParserException(std::string ss) : s(ss) {};
+				~ParserException() throw() {}
+    
+    			virtual const char* what() const throw() {
+        			return s.c_str();
+    			};
 		};
-
-		class FailedToOpenFile : public std::exception {
-			public:
-				virtual const char* what() const throw() {
-					return "couldn't open the file";
-				}
-		};
-
-		class UnknownTagException : public std::exception {
-			public:
-				virtual const char* what() const throw() {
-					return "unknown keyword";
-				}
-		};
-
-		class KeywordWithoutValueException : public std::exception {
-			public:
-				virtual const char* what() const throw() {
-					return "keyword without value";
-				}
-		};
-
-		class InvalidPortNumberException : public std::exception {
-			public:
-				virtual const char* what() const throw() {
-					return "invalid port number";
-				}
-		};
-
+		
 	private:
-		std::vector<uint16_t> ports;
-		const std::map<int, std::string> error_messages;
+		std::vector<Server> servers;
+		std::vector<Client> clients;
+
+		void duplicateServers(void);
+		size_t getServerUsedSockets(void);
+		
+		Server& getServerByName(const std::string &buffer, Server& default_server);
+
+		std::map<std::string, std::string> params;
+
+		struct pollfd *pollfds;
+
+		size_t reserved_sockets, max_fds, open_fds;
+
+		void readLocationBlock(Lexer& lexer, Token& token);
+		
+		locationPair parseLocation(const std::map<std::string, std::string>& lexerParameters,
+                                                 std::string& locationPath);
 };
 
 #endif // WEBSERV_HPP

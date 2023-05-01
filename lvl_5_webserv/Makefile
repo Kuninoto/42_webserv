@@ -1,11 +1,11 @@
 CC = c++
-CFLAGS = -Wall -Wextra -Werror -std=c++98 -fsanitize=address #-O3
+CFLAGS = -Wall -Wextra -Werror -std=c++98 -g #-fsanitize=address #-O3
 INCLUDE = -I./includes
 VPATH = srcs srcs/utils
 RM = rm -rf
 
-UTILS = splitStr sliceVec getTimeStamp
-GENERAL = Socket WebServ Client
+UTILS = splitStr sliceVec time file trimStr
+GENERAL = Lexer WebServ Client Server  CGI
 
 NAME = webserv
 TEST_CONFIG_FILE = config/inception.conf
