@@ -1,16 +1,17 @@
-# include <string>
-# include <map>
-# include <fstream>
-# include <iostream>
-# include <sstream>
-# include <dirent.h>
-# include <sys/stat.h>
-# include <unistd.h>
-# include "utils.hpp"
+#include <string>
+#include <map>
+#include <fstream>
+#include <iostream>
+#include <sstream>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include "utils.hpp"
 
 bool isRegularFile(const char *path)
 {
 	struct stat st;
+
 	if (stat(path, &st) == 0
     && S_ISREG(st.st_mode)) {
 		return true;
@@ -22,15 +23,14 @@ bool isRegularFile(const char *path)
 bool isDirectory(const char *path)
 {
 	struct stat st;
-    
+
     if (stat(path,&st) != 0) {
         return false;
     }
-
 	return st.st_mode & S_IFDIR;
 }
 
-std::string getFileType(std::string file)
+std::string getFileType(const std::string& file)
 {
     static std::map<std::string, std::string> types;
 
@@ -46,31 +46,28 @@ std::string getFileType(std::string file)
 }
 
 std::string getResponseBoilerPlate(const std::string& code, const std::string& title, const std::string& body) {
-    std::string html;
-    std::string response = "";
+    std::string html = 
+        "<!DOCTYPE html>\n"
+        "<html lang=\"en\">\n"
+        "<head>\n"
+        "    <meta charset=\"UTF-8\">\n"
+        "    <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n"
+        "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n"
+        "    <title>" + title + "</title>\n"
+        "</head>\n"
+        "<body>\n" + body + "</body>\n"
+        "</html>\n";
 
-    html += "<!DOCTYPE html>\n";
-    html += "<html lang='en'>\n";
-    html += "<head>\n";
-    html += "    <meta charset='UTF-8'>\n";
-    html += "    <meta http-equiv='X-UA-Compatible' content='IE=edge'>\n";
-    html += "    <meta name='viewport' content='width=device-width, initial-scale=1.0'>\n";
-    html += "    <title>" + title + "</title>\n";
-    html += "</head>\n";
-    html += "<body>\n";
-    html += body;
-    html += "</body>\n";
-    html += "</html>\n";
-
-    response += "HTTP/1.1 " + code + "\n";
-    response += "Content-Type: text/html\n";
-    response += "Content-Length: " + ft_ntos(html.size()) + "\n\n"; 
-    response += html;
+    std::string response = 
+        "HTTP/1.1 " + code + "\n"
+        "Content-Type: text/html\n"
+        "Content-Length: " + ft_ntos(html.size()) + "\n\n"
+            + html;
 
     return response;
 }
 
-std::string getFileSize(std::string file)
+std::string getFileSize(const std::string& file)
 {
     std::streampos begin, end;
     std::stringstream stream;
@@ -78,9 +75,8 @@ std::string getFileSize(std::string file)
 
     std::ifstream open_file(file.c_str(), std::ios::binary | std::ios::in);
 
-
     begin = open_file.tellg();
-    open_file.seekg (0, std::ios::end);
+    open_file.seekg(0, std::ios::end);
     end = open_file.tellg();
     open_file.close();
 
@@ -90,7 +86,12 @@ std::string getFileSize(std::string file)
     return size;
 }
 
-std::string getHeader(std::string file, std::string& code)
+std::string getOkHeader(const std::string& file)
 {
-    return "HTTP/1.1 " + code + " OK\nContent-Type: " + getFileType(file) + "; charset=UTC-8\nContent-Length: " + getFileSize(file) +"\n\n";
+    std::string header = 
+        "HTTP/1.1 200 OK\n"
+        "Content-Type: " + getFileType(file) + "; charset=UTC-8\n"
+        "Content-Length: " + getFileSize(file) +"\n\n";
+
+    return header;
 }

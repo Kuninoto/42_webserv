@@ -1,10 +1,10 @@
-# include <stdlib.h>
-# include <unistd.h>
-# include <errno.h>
-# include <sstream>
-# include <fstream>
-# include "Server.hpp"
-# include "WebServ.hpp"
+#include <stdlib.h>
+#include <unistd.h>
+#include <errno.h>
+#include <sstream>
+#include <fstream>
+#include "Server.hpp"
+#include "WebServ.hpp"
 
 static size_t parseClientMaxBodySize(const std::string& str)
 {
@@ -67,12 +67,10 @@ Server::Server(std::map<std::string, std::string>& parameters)
     this->createErrorResponse();
 }
 
-void Server::createErrorResponse()
+void Server::createErrorResponse(void)
 {
     std::string path_to_error_page = this->root + this->errorPagePath;
-
     std::ifstream file(path_to_error_page.c_str(), std::ios::binary | std::ios::in);
-
     this->error_response = "HTTP/1.1 400 Not Found\nContent-Type: " + getFileType(path_to_error_page) + "; charset=UTC-8\nContent-Length: " + getFileSize(path_to_error_page) + "\n\n";
     
     this->error_response.append((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
@@ -86,7 +84,7 @@ void Server::createSocket(void)
 {
     this->socket_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (this->socket_fd == -1)
-		throw std::out_of_range(SOCKET_OPEN_ERR);
+		throw std::runtime_error(SOCKET_OPEN_ERR);
 }
 
 std::ostream &operator<<(std::ostream &stream, Server& sv)

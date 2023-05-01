@@ -32,6 +32,4 @@ static inline int panic(const std::string &error_msg)
     return EXIT_FAILURE;
 }
 
-std::vector<Server> parseConfigFile(std::string filename);
-
 #endif // LIBWEBSERV_HPP
