@@ -25,13 +25,6 @@ using std::endl;
 
 int main(void)
 {
-	//TODO: check if all exceptions are working
-	//TODO: check if script receives arguments
-	//TODO: Python script not running but bash is
-	//TODO: Understand GET POST DELETE
-
-	try
-	{
 		/*HTTP Header reference
 			POST scripts/test.py HTTP/1.1
 			Host: www.example.com
@@ -41,29 +34,62 @@ int main(void)
 			name=John+Doe&age=30&gender=M
 		*/
 
+	try
+	{
 		cout << "--------Debug--------" << endl;
 		cout << "---------------------" << endl;
-		setenv("REQUEST_METHOD", "GET", 0);
-		setenv("SCRIPT_NAME", "scripts/story_params.py", 0);
-		// setenv("PATH_INFO", "/nfs/homes/roramos/Documents/42_webserv/lvl_5_webserv", 0);
-		setenv("PATH_INFO", "/home/Flirt/Desktop/Projects_42/Webserver/lvl_5_webserv", 0);
-		setenv("QUERY_STRING", "name=John+Doe&age=30&gender=M", 0);
+		setenv("REQUEST_METHOD", "POST", 1);
+		setenv("SCRIPT_NAME", "scripts/test.sh", 1);
+		setenv("PATH_INFO", "/nfs/homes/jarsenio/Desktop/projects/webserver/lvl_5_webserv", 1);
+		// setenv("PATH_INFO", "/home/Flirt/Desktop/Projects_42/Webserver/lvl_5_webserv", 1);
+		setenv("QUERY_STRING", "name=John+Doe+Wallfrost+dos+Santos&age=31&gender=M", 1);
+		setenv("CONTENT_LENGTH", "7", 1);
+		setenv("CONTENT_TYPE", "random", 1);
+
+		CGI cgi2;
+		std::ifstream output(".output");
+		std::string line;
+		cout << "Expected output: \"Hello from test.sh!\"" << endl;
+		cout << "Script output  : \"";
+		while (getline(output, line))
+			std::cout << line;
+		cout << "\"" << endl;
+		cout << "---------------------" << endl;
+		cout << "------Finished-------" << endl;
+		output.close();
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
+	}
+	
+	try
+	{
+		cout << "--------Debug--------" << endl;
+		cout << "---------------------" << endl;
+		setenv("REQUEST_METHOD", "POST", 1);
+		setenv("SCRIPT_NAME", "scripts/story_params.py", 1);
+		setenv("PATH_INFO", "/nfs/homes/jarsenio/Desktop/projects/webserver/lvl_5_webserv", 1);
+		// setenv("PATH_INFO", "/home/Flirt/Desktop/Projects_42/Webserver/lvl_5_webserv", 1);
+		setenv("QUERY_STRING", "name=John+Doe+Santos&age=21&gender=M", 1);
+		setenv("CONTENT_LENGTH", "7", 1);
+		setenv("CONTENT_TYPE", "random", 1);
 
 		CGI cgi;
 		// cout << "Expected output: \"Hello from test.py!\"" << endl;
-		cout << "Script output  : \"" << cgi.response << "\"" << endl;
+		std::ifstream output(".output");
+		std::string line;
+		cout << "Script output  : \"";
+		while (getline(output, line))
+			std::cout << line;
+		cout << "\"" << endl;
 		cout << "---------------------" << endl;
 		cout << "------Finished-------" << endl;
-
-		setenv("SCRIPT_NAME", "scripts/test.sh", 1);
-		CGI cgi2;
-		cout << "Expected output: \"Hello from test.sh!\"" << endl;
-		cout << "Script output  : \"" << cgi2.response << "\"" << endl;
-		cout << "---------------------" << endl;
-		cout << "------Finished-------" << endl;
+		output.close();
 	}
 	catch(const std::exception& e) {
 		std::cerr << e.what() << '\n';
 	}
+
 	return EXIT_SUCCESS;
 }

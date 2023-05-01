@@ -20,6 +20,11 @@ CGI::CGI()
 	cout << "Extension is valid: " << "yes" << endl;
 }
 
+CGI::~CGI(void) {
+	// if (args[0])
+	// 	delete args;
+}
+
 /**
  * @brief function to run the CGI process
  *
@@ -61,8 +66,8 @@ bool CGI::getEnvVars()
 	envVars["PATH_INFO"] = getenv("PATH_INFO");
 	envVars["SCRIPT_NAME"] = getenv("SCRIPT_NAME");
 	envVars["QUERY_STRING"] = getenv("QUERY_STRING");
-	// envVars["CONTENT_LENGTH"] = getenv("CONTENT_LENGTH");
-	// envVars["CONTENT_TYPE"] = getenv("CONTENT_TYPE");
+	envVars["CONTENT_LENGTH"] = getenv("CONTENT_LENGTH");
+	envVars["CONTENT_TYPE"] = getenv("CONTENT_TYPE");
 
 	if (!checkVars(envVars["REQUEST_METHOD"]))
 		return false;
@@ -86,6 +91,10 @@ bool CGI::checkVars(std::string method)
 {
 	if (envVars["REQUEST_METHOD"].empty())
 		return(retError("REQUEST_METHOD variable missing"));
+	if (envVars["REQUEST_METHOD"] != "GET" && envVars["REQUEST_METHOD"] != "POST")
+	{
+		return(retError("Bad variable REQUEST_METHOD"));
+	}
 
 	if (envVars["PATH_INFO"].empty())
 		return(retError("PATH_INFO variable missing"));
@@ -151,7 +160,9 @@ void CGI::runScript(void)
 	int pipefd[2];
 	char buffer[1024];
 	pid_t pid;
-
+	if(!deleteFile())
+		throw(CGIException("File not deleted"));
+	std::ofstream output(".output");
 	if (pipe(pipefd) == -1)
 		throw (CGIException("pipe() failed"));
 
@@ -173,15 +184,30 @@ void CGI::runScript(void)
 	{
 		close(pipefd[1]);
 		int status;
-		while (waitpid(pid, &status, 0) == -1)
-			;
+		while (waitpid(pid, &status, 0) == -1);
+	
+		// Read from pipe and write to file
 		while (read(pipefd[0], &buffer, 1023) != 0)
 		{
-			response += buffer;
+			buffer[1023] = '\0';
+			output << buffer;
+			cout << "buffer \"" << buffer << "\"" << endl;
 			memset(&buffer, '\0', 1024);
 		}
+		output.flush(); // Flush the output to the file
 		close(pipefd[0]);
 	}
+}
+
+bool CGI::deleteFile() {
+	if (std::FILE* file = std::fopen(".output", "r")) {
+		std::fclose(file);
+		// delete file
+		if (std::remove(".output") != 0)
+			return false;
+		cout << "file deleted" << endl;
+	}
+	return true;
 }
 
 /**

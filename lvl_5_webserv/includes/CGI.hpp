@@ -19,7 +19,7 @@ class Lexer;
 class CGI {
 	public:
 		CGI(void);
-		~CGI(void) {delete args;};
+		~CGI(void);
 
 		std::string response;
 
@@ -35,6 +35,7 @@ class CGI {
 		void parseQueryString();
 		bool getEnvVars();
 		bool checkVars(std::string method);
+		bool deleteFile();
 
 		char **args;
 		std::vector<std::string> params;
