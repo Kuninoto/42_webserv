@@ -34,6 +34,7 @@ class CGI {
 		bool retError(std::string message);
 		void parseQueryString();
 		bool getEnvVars();
+		bool checkVars(std::string method);
 
 		char **args;
 		std::vector<std::string> params;
@@ -45,16 +46,16 @@ class CGI {
 		std::string error;
 };
 
-	class CGIException : public std::exception {
-		public:
-			CGIException(const std::string error) throw() {message = new std::string(error);};
-			virtual ~CGIException() throw() {delete message;}
+class CGIException : public std::exception {
+	public:
+		CGIException(const std::string error) throw() {message = new std::string(error);};
+		virtual ~CGIException() throw() {delete message;}
 
-			virtual const char* what() const throw() {
-				return message->c_str();
-			};
-		private:
-			const std::string *message;
-	};
+		virtual const char* what() const throw() {
+			return message->c_str();
+		};
+	private:
+		const std::string *message;
+};
 
 #endif // CGI_HPP

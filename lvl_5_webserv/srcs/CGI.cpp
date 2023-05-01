@@ -29,16 +29,13 @@ CGI::CGI()
  */
 bool CGI::runCGI()
 {
+	// Get environment variables
 	if (!this->getEnvVars())
 		return false;
-	if (!this->getExtension())
-		return(this->retError("The file has no extension"));
-
-	this->parseQueryString();
-	this->filePath = this->envVars["PATH_INFO"] + ("/" + this->envVars["SCRIPT_NAME"]);
 
 	if (!this->validExtension())
 		return(this->retError("Invalid file type"));
+
 	if (!this->validPath())
 		return(this->retError("Invalid file"));
 
@@ -52,23 +49,58 @@ bool CGI::runCGI()
 	return true;
 }
 
+/**
+ * @brief gets the environment variables and checks if all obligatory ones are present
+ *
+ * @return true if everything is good
+ * @return false if an obligatory variable is missing
+ */
 bool CGI::getEnvVars()
 {
-	this->envVars["REQUEST_METHOD"] = getenv("REQUEST_METHOD");
-	this->envVars["PATH_INFO"] = getenv("PATH_INFO");
-	this->envVars["SCRIPT_NAME"] = getenv("SCRIPT_NAME");
-	this->envVars["QUERY_STRING"] = getenv("QUERY_STRING");
+	envVars["REQUEST_METHOD"] = getenv("REQUEST_METHOD");
+	envVars["PATH_INFO"] = getenv("PATH_INFO");
+	envVars["SCRIPT_NAME"] = getenv("SCRIPT_NAME");
+	envVars["QUERY_STRING"] = getenv("QUERY_STRING");
+	// envVars["CONTENT_LENGTH"] = getenv("CONTENT_LENGTH");
+	// envVars["CONTENT_TYPE"] = getenv("CONTENT_TYPE");
 
-	if (this->envVars["REQUEST_METHOD"].empty())
+	if (!checkVars(envVars["REQUEST_METHOD"]))
+		return false;
+
+	if (!envVars["QUERY_STRING"].empty())
+		parseQueryString();
+	if (!getExtension())
+		return(retError("The file has no extension"));
+	filePath = envVars["PATH_INFO"] + ("/" + envVars["SCRIPT_NAME"]);
+	return true;
+}
+
+/**
+ * @brief checks if all variables are present for the request type
+ *
+ * @param method either GET, POST or DELETE
+ * @return true
+ * @return false
+ */
+bool CGI::checkVars(std::string method)
+{
+	if (envVars["REQUEST_METHOD"].empty())
 		return(retError("REQUEST_METHOD variable missing"));
-	if (this->envVars["PATH_INFO"].empty())
+
+	if (envVars["PATH_INFO"].empty())
 		return(retError("PATH_INFO variable missing"));
-	if (this->envVars["SCRIPT_NAME"].empty())
+
+	if (envVars["SCRIPT_NAME"].empty())
 		return(retError("SCRIPT_NAME variable missing"));
-	
-	// TODO: understand what to do if variable is not obligatory
-	// if (this->envVars["QUERY_STRING"].empty())
-	// 	return(retError("QUERY_STRING variable missing"));
+
+	if (method == "POST") {
+		if (envVars["QUERY_STRING"].empty())
+			return(retError("QUERY_STRING variable missing"));
+		if (envVars["CONTENT_LENGTH"].empty())
+			return(retError("CONTENT_LENGTH variable missing"));
+		if (envVars["CONTENT_TYPE"].empty())
+			return(retError("CONTENT_TYPE variable missing"));
+	}
 
 	return true;
 }
@@ -91,7 +123,7 @@ bool CGI::validPath(void) {
  */
 bool CGI::validExtension(void)
 {
-	if (this->extension == "py" || this->extension == "php" || this->extension == "sh")
+	if (extension == "py" || extension == "php" || extension == "sh")
 		return true;
 	return false;
 }
@@ -103,10 +135,10 @@ bool CGI::validExtension(void)
  */
 bool	CGI::getExtension(void)
 {
-	size_t pos = this->envVars["SCRIPT_NAME"].find_last_of('.');
+	size_t pos = envVars["SCRIPT_NAME"].find_last_of('.');
 	if (pos == std::string::npos)
 		return false;
-	this->extension = this->envVars["SCRIPT_NAME"].substr(pos + 1);
+	extension = envVars["SCRIPT_NAME"].substr(pos + 1);
 	return true;
 }
 
@@ -211,7 +243,7 @@ bool	CGI::retError(std::string message)
 
 /**
  * @brief parses the query string so that it can be passed as arguments to the script
- * 
+ *
  */
 void CGI::parseQueryString()
 {
