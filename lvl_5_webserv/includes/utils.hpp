@@ -36,7 +36,7 @@ static inline void messageLog(const std::string& message, const char *color, boo
 };
 
 template <typename T>
-static std::string ft_ntos(const T num)
+std::string ft_ntos(const T num)
 {
     std::string as_str;
     std::stringstream ss;

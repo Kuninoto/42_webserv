@@ -5,9 +5,18 @@ be saved
 
 CGI (POST and GET)
 
-
 Tests using scripts and whatnot
 
+LEXER -------------------------
+check if at least one server exists ❌
+check for empty arguments ✅
+check for multiple arguments (except allow_methods) ✅
+check for ';' ✅
+validate port number ✅
+validate client_max_body_size ✅
+
+check for bracket pairness ❌
+(no closing bracket for blocks is working and shouldn't)
 
 
 After math --------------------

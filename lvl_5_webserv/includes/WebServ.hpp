@@ -4,9 +4,14 @@
 #include <map>
 #include "libwebserv.hpp"
 
+#define SETSOCKETOPT_ERR "fatal: settockopt() failed"
+#define GETADDRINFO_ERR "fatal: getaddrinfo() failed"
+#define BIND_ERR "fatal: bind() failed"
+#define LISTEN_ERR "fatal: listen() failed"
+
 class WebServ {
 	public:
-		WebServ(std::string filename);
+		WebServ(std::string configFile);
 		~WebServ(void);
 
 		void addParam(const std::string& param, const std::string& value)
@@ -15,16 +20,15 @@ class WebServ {
 		void bootServers(void);
 		void runServers(void);
 
-		std::vector<Server> parseConfigFile(std::string filename);
+		std::vector<Server> parseConfigFile(const std::string& filename);
 
 		class ParserException : public std::exception {
     		public:
-				std::string s;
-        		ParserException(std::string ss) : s(ss) {};
+				std::string message;
+        		ParserException(std::string message) : message(message) {};
 				~ParserException() throw() {}
-    
     			virtual const char* what() const throw() {
-        			return s.c_str();
+        			return message.c_str();
     			};
 		};
 		
@@ -33,9 +37,9 @@ class WebServ {
 		std::vector<Client> clients;
 
 		void duplicateServers(void);
-		size_t getServerUsedSockets(void);
+		size_t getNumberOfSockets(void);
 		
-		Server& getServerByName(const std::string &buffer, Server& default_server);
+		Server& getServerByName(const std::string& buffer, Server& default_server);
 
 		std::map<std::string, std::string> params;
 

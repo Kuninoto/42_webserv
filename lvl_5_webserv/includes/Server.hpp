@@ -9,7 +9,6 @@
 #include <sstream>
 
 #define SOCKET_OPEN_ERR "fatal: failed to open socket"
-#define SETSOCKETOPT_ERR "fatal: settockopt() failed"
 
 typedef struct location_s {
     std::string root;
@@ -36,37 +35,30 @@ class Server {
         const std::string& getErrorPagePath(void) const { return this->errorPagePath; };
         const std::string& getRoot(void) const { return this->root; };
         const locationMap& getLocations() const { return this->locations; };
-        std::string getErrorResponse(void){ return this->error_response; };
+        std::string getErrorResponse(void){ return this->errorResponse; };
         size_t getMaxBodySize(void) const { return this->clientMaxBodySize; };
-        bool getSkipBind(void) { return this->skip_bind; };
-		int getSocketFd(void) const { return this->socket_fd; };
-        void addLocation(std::pair<std::string, location_t> locationPair);
+		int getSocketFd(void) const { return this->socketFd; };
+
+        void addLocation(locationPair locationPair);
 		void createSocket(void);
 
-        void setSkipBind(void) { this->skip_bind = true; };
+        bool isDefaultServer; // default for host:port
 
         locationMap locations;
 
     private:
-        // 8080
         std::string port;
-        // localhost
-        std::string serverName;
-        // 127.0.0.1
         std::string host;
-        // 404 pages/error/404.html
+        std::string serverName;
+        std::string index;
         std::string errorPagePath;
         std::string root;
-        std::string index;
         size_t clientMaxBodySize;
+        std::string errorResponse;
+		int	socketFd;
 
-        bool skip_bind;
 
-        std::string error_response;
-
-		int	socket_fd;
-
-        void createErrorResponse();
+        std::string createErrorResponse(void);
 };
 
 std::ostream &operator<<(std::ostream &stream, Server& sv);

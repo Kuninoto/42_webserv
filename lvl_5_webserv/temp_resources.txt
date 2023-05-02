@@ -1,8 +1,5 @@
 Webserv
 
-
-
-
 RFC 7231 (HTTP/1.1 messages): https://datatracker.ietf.org/doc/html/rfc7231
 
 
@@ -42,10 +39,6 @@ Beej’s Guide to Network Programming: https://beej.us/guide/bgnet/html/
 
 
 client_max_body_size: https://linuxhint.com/what-is-client-max-body-size-nginx/ || https://stackoverflow.com/questions/5840148/how-can-i-get-a-files-size-in-c || https://stackoverflow.com/questions/10634629/what-are-the-usage-differences-between-size-t-and-off-t
-
-
-
-
 
 https://adrienblanc.com/projects/42/webserv
 
@@ -93,12 +86,6 @@ http://www.wijata.com/cgi/cgispec.html#4.0
 
 
 http://www.mnuwer.dbasedeveloper.co.uk/dlearn/web/session01.htm
-
-
-https://rostlab.org/owiki/images/3/39/Sebastian_Hollizeck-BiolabExpertTalk.pdf
-
-
-
 
 
 https://youtu.be/Yt1nesKi5Ec

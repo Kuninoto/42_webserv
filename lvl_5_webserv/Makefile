@@ -8,7 +8,7 @@ UTILS = splitStr sliceVec time file trimStr
 GENERAL = Lexer WebServ Client Server  CGI
 
 NAME = webserv
-TEST_CONFIG_FILE = config/inception.conf
+TEST_CONFIG_FILE = config/empty.conf
 
 SRCS = $(addsuffix .cpp, $(UTILS))\
 	   $(addsuffix .cpp, $(GENERAL))\
