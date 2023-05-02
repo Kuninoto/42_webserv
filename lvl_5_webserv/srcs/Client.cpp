@@ -1,7 +1,7 @@
-#include "Client.hpp"
 #include <sstream>
 #include <algorithm>
 #include <dirent.h>
+#include "Client.hpp"
 
 Client::Client(Server server, int fd): server(server), fd(fd), request_sent(false) {};
 
@@ -13,9 +13,9 @@ void Client::setRequest(std::string request)
 
 void Client::parseRequest(void)
 {
+    this->request_content.clear();
     std::string line;
     std::stringstream ss(this->request);
-    this->request_content.clear();
 
     std::getline(ss, line);
     std::vector<std::string> components = splitStr(line, ' ');
@@ -28,9 +28,11 @@ void Client::parseRequest(void)
         this->method = components.at(0);
     else
         throw ClientException(RS501);
+
     this->uri_target = components.at(1);
     if (this->uri_target.length() > 1024)
         throw ClientException(RS414);
+
     if (components.at(2) == "HTTP/1.0\r")
         throw ClientException(RS505);
     if (components.at(2) != "HTTP/1.1\r")
@@ -125,8 +127,7 @@ void Client::sendErrorCode(std::string code)
     const std::string& response = getResponseBoilerPlate(code, code, body);
 
     write(this->fd, response.c_str(), response.length());
-    request.clear();
-
+    this->request.clear();
 }
 
 void Client::resolveResponse(std::string& root, std::string& uri, size_t safety_cap)
@@ -146,7 +147,7 @@ void Client::resolveResponse(std::string& root, std::string& uri, size_t safety_
     {
         if (location->first == "/" && uri != "/") continue;
 
-        std::string::size_type locate = uri.find(location->first);
+        size_t locate = uri.find(location->first);
         if (locate == std::string::npos) continue;
 
         if (location->second.allowed_methods.size() != 0
@@ -193,14 +194,14 @@ void Client::resolveResponse(std::string& root, std::string& uri, size_t safety_
 void Client::response(void)
 {
     // if already sent or request is not complete return
-    if (request_sent || request.find(REQUEST_DELIMITER) == std::string::npos)
+    if (this->request_sent || this->request.find(REQUEST_DELIMITER) == std::string::npos)
         return;
-    request_sent = true;
+    this->request_sent = true;
 
     try
     {
         this->parseRequest();
-        std::string root = server.getRoot();
+        std::string root = this->server.getRoot();
         std::string uri = this->uri_target;
         this->resolveResponse(root, uri, 0);
     }

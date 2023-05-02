@@ -45,7 +45,8 @@ std::string getFileType(const std::string& file)
     return types[file.substr(file.find_last_of(".") + 1)];
 }
 
-std::string getResponseBoilerPlate(const std::string& code, const std::string& title, const std::string& body) {
+std::string getResponseBoilerPlate(const std::string& code, const std::string& title, const std::string& body)
+{
     std::string html = 
         "<!DOCTYPE html>\n"
         "<html lang=\"en\">\n"

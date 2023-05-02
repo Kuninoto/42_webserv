@@ -79,16 +79,15 @@ bool CGI::validExtension(void)
 
 /**
  * @brief Returns the extension of the file stored in "filename" variable
- * 
- * @return std::string 
+ *  
  */
 std::string	CGI::getExtension(void)
 {
 	std::string ext;
 
-	int pos = this->filename.find_last_of('.');
-	// if (pos == std::string::npos)
-	//	error
+	size_t pos = this->filename.find_last_of('.');
+	if (pos == std::string::npos)
+		throw CGIException("invalid filaname, no extension");
 	ext = this->filename.substr(pos + 1);
 	return ext;
 }
