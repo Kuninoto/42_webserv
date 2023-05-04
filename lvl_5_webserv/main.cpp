@@ -40,8 +40,8 @@ int main(void)
 		cout << "---------------------" << endl;
 		setenv("REQUEST_METHOD", "POST", 1);
 		setenv("SCRIPT_NAME", "scripts/test.sh", 1);
-		setenv("PATH_INFO", "/nfs/homes/jarsenio/Desktop/projects/webserver/lvl_5_webserv", 1);
-		// setenv("PATH_INFO", "/home/Flirt/Desktop/Projects_42/Webserver/lvl_5_webserv", 1);
+		// setenv("PATH_INFO", "/nfs/homes/jarsenio/Desktop/projects/webserver/lvl_5_webserv", 1);
+		setenv("PATH_INFO", "/home/Flirt/Desktop/Projects_42/Webserver/lvl_5_webserv", 1);
 		setenv("QUERY_STRING", "name=John+Doe+Wallfrost+dos+Santos&age=31&gender=M", 1);
 		setenv("CONTENT_LENGTH", "7", 1);
 		setenv("CONTENT_TYPE", "random", 1);
@@ -69,8 +69,8 @@ int main(void)
 		cout << "---------------------" << endl;
 		setenv("REQUEST_METHOD", "POST", 1);
 		setenv("SCRIPT_NAME", "scripts/story_params.py", 1);
-		setenv("PATH_INFO", "/nfs/homes/jarsenio/Desktop/projects/webserver/lvl_5_webserv", 1);
-		// setenv("PATH_INFO", "/home/Flirt/Desktop/Projects_42/Webserver/lvl_5_webserv", 1);
+		// setenv("PATH_INFO", "/nfs/homes/jarsenio/Desktop/projects/webserver/lvl_5_webserv", 1);
+		setenv("PATH_INFO", "/home/Flirt/Desktop/Projects_42/Webserver/lvl_5_webserv", 1);
 		setenv("QUERY_STRING", "name=John+Doe+Santos&age=21&gender=M", 1);
 		setenv("CONTENT_LENGTH", "7", 1);
 		setenv("CONTENT_TYPE", "random", 1);

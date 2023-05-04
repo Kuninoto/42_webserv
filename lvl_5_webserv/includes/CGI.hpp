@@ -11,6 +11,7 @@
 #include <dirent.h>
 #include <sys/wait.h>
 #include <algorithm>
+#include <fcntl.h>
 
 #include "libwebserv.hpp"
 

@@ -152,51 +152,40 @@ bool	CGI::getExtension(void)
 }
 
 /**
- * @brief run the script and save the output into response
+ * @brief run the script and save the output into file
  *
  */
 void CGI::runScript(void)
 {
-	int pipefd[2];
-	char buffer[1024];
-	pid_t pid;
-	if(!deleteFile())
-		throw(CGIException("File not deleted"));
-	std::ofstream output(".output");
-	if (pipe(pipefd) == -1)
-		throw (CGIException("pipe() failed"));
+    pid_t pid;
+    if(!deleteFile())
+        throw(CGIException("File not deleted"));
 
-	pid = fork();
-	if (pid == -1)
-		throw (CGIException("fork() failed"));
-	// child
-	if (pid == 0)
-	{
-		close(pipefd[0]);
-		dup2(pipefd[1], STDOUT_FILENO);
-		close(pipefd[1]);
-		creatArgs();
-		execve(runner.c_str(), args, NULL);
-		// only gets here if execve fails
-		throw (CGIException("execve() failed"));
-	}
-	else
-	{
-		close(pipefd[1]);
-		int status;
-		while (waitpid(pid, &status, 0) == -1);
-	
-		// Read from pipe and write to file
-		while (read(pipefd[0], &buffer, 1023) != 0)
-		{
-			buffer[1023] = '\0';
-			output << buffer;
-			cout << "buffer \"" << buffer << "\"" << endl;
-			memset(&buffer, '\0', 1024);
-		}
-		output.flush(); // Flush the output to the file
-		close(pipefd[0]);
-	}
+    int output_fd = open(".output", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (output_fd == -1)
+        throw (CGIException("open() failed"));
+
+    pid = fork();
+    if (pid == -1)
+        throw (CGIException("fork() failed"));
+
+    // child
+    if (pid == 0)
+    {
+        dup2(output_fd, STDOUT_FILENO);
+        close(output_fd);
+        creatArgs();
+        execve(runner.c_str(), args, NULL);
+        // only gets here if execve fails
+        throw (CGIException("execve() failed"));
+    }
+    else
+    {
+        int status;
+        while (waitpid(pid, &status, 0) == -1);
+
+        close(output_fd);
+    }
 }
 
 bool CGI::deleteFile() {
