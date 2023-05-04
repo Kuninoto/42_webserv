@@ -1,13 +1,14 @@
 #ifndef CLIENT_HPP
 #define CLIENT_HPP
 
-#include <iostream>
-#include <fstream>
 #include <unistd.h>
-#include <cstring>
 
-#include "utils.hpp"
+#include <cstring>
+#include <fstream>
+#include <iostream>
+
 #include "Server.hpp"
+#include "utils.hpp"
 
 #define REQUEST_DELIMITER "\r\n\r\n"
 
@@ -24,46 +25,51 @@
 #define RS508 "508 Loop Detected"
 
 class Client {
-    public:
-        Client(Server server, int fd);
+   public:
+    Client(Server server, int fd);
+    std::string getRequest(void) { return this->request; };
+    void setRequest(std::string request);
 
-        void setRequest(std::string request);
-        
-        void response(void);
+    void response(void);
 
-        class ClientException : public std::exception {
-    		public:
-				std::string s;
-        		ClientException(std::string ss) : s(ss) {};
-				~ClientException() throw() {}
-    
-    			virtual const char* what() const throw() {
-        			return s.c_str();
-    			};
-		};
+    Server& getTargetServer(void) { return this->server; };
+    void setTargetServer(Server& server) { this->server = server; } ;
+    bool preparedToSend(void) {
+        return !(this->request_sent || this->request.find(REQUEST_DELIMITER) == std::string::npos);
+    };
 
-        std::map<std::string, std::string> headers;
+    class ClientException : public std::exception {
+       public:
+        std::string s;
+        ClientException(std::string ss) : s(ss){};
+        ~ClientException() throw() {}
 
-    private:
-        Server server;
+        virtual const char* what() const throw() {
+            return s.c_str();
+        };
+    };
 
-        int fd;
+    std::map<std::string, std::string> headers;
 
-        bool request_sent;
-        std::string method;
-        
-        std::string request;
-        std::string uri_target;
-        std::string request_content;
-        
-        void parseRequest(void);
-        void resolveResponse(std::string& root, std::string& uri, size_t safety_cap);
-        void responseFavIcon(void);
-        void sendDirectoryListing(std::string uri);
-        void sendResponse(std::string uri);
-        void sendErrorCode(std::string code);
-        std::string resolvePathAndLocation(void); 
+   private:
+    Server server;
 
+    int fd;
+
+    bool request_sent;
+    std::string method;
+
+    std::string request;
+    std::string uri_target;
+    std::string request_content;
+
+    void parseRequest(void);
+    void resolveResponse(std::string& root, std::string& uri, size_t safety_cap);
+    void responseFavIcon(void);
+    void sendDirectoryListing(std::string uri);
+    void sendResponse(std::string uri);
+    void sendErrorCode(std::string code);
+    // std::string resolvePathAndLocation(void);
 };
 
-#endif // CLIENT_HPP
+#endif  // CLIENT_HPP
