@@ -1,4 +1,5 @@
 #include "Client.hpp"
+#include "CGI.hpp"
 
 #include <dirent.h>
 
@@ -78,27 +79,14 @@ void Client::handlePostRequest() {
 	std::string contentType = this->headers["Content-Type"];
 	
 	// Check if the content type is JSON
-	if (contentType == "application/json") {
-		// Read the JSON data from the request content
-		std::string jsonData = this->request_content;
-		
-		// Parse the JSON data
-		std::string::size_type startPos = jsonData.find_first_of("{");
-		std::string::size_type endPos = jsonData.find_last_of("}");
-		if (startPos != std::string::npos && endPos != std::string::npos) {
-			std::string jsonStr = jsonData.substr(startPos, endPos - startPos + 1);
-			
-			// TODO: Do something with the JSON data, like process it or store it in a file
-			
+	if (contentType == "application/x-www-form-urlencoded") {
+	
+			CGI cgi;
 			// Send a response back to the client indicating success
 			std::string response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n";
 			this->sendResponse(response);
-		} else {
-			// If the JSON data is not valid, return a bad request response
-			std::string response = "HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\n\r\n";
-			this->sendResponse(response);
-		}
-	} else {
+	}
+	else {
 		// If the content type is not JSON, return a bad request response
 		std::string response = "HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\n\r\n";
 		this->sendResponse(response);
