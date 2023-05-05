@@ -1,82 +1,107 @@
-# include "Client.hpp"
-# include <sstream>
-# include <algorithm>
-# include <dirent.h>
+#include "Client.hpp"
 
-Client::Client(Server server, int fd): server(server), fd(fd), request_sent(false){}
+#include <dirent.h>
 
-void Client::setRequest(std::string request)
-{
+#include <algorithm>
+#include <sstream>
+
+Client::Client(Server server, int fd) : server(server), fd(fd), request_sent(false){};
+
+void Client::setRequest(std::string request) {
     this->request_sent = false;
-    this->request.append(request); 
+    this->request.append(request);
 }
 
-void Client::parseRequest()
-{
+void Client::parseRequest(void) {
+    this->request_content.clear();
     std::string line;
-    std::stringstream request_stream(request);
+    std::stringstream ss(this->request);
 
-    std::getline(request_stream, line);
+    std::getline(ss, line);
     std::vector<std::string> components = splitStr(line, ' ');
+    if (components.size() != 3)
+        throw ClientException(RS400);
 
-    if (components.at(0) == "GET")
-        method = GET;
-    else if (components.at(0) == "POST")
-        method = POST;
-    else if (components.at(0) == "DELETE")
-        method = DELETE;
+    if (components.at(0) == "GET" || components.at(0) == "POST" || components.at(0) == "DELETE")
+        this->method = components.at(0);
     else
-        std::cout << "error" << std::endl;
+        throw ClientException(RS501);
 
-    page = components.at(1);
+    this->uri_target = components.at(1);
+    if (this->uri_target.length() > 1024)
+        throw ClientException(RS414);
+
+    if (components.at(2) == "HTTP/1.0\r")
+        throw ClientException(RS505);
+    if (components.at(2) != "HTTP/1.1\r")
+        throw ClientException(RS400);
+
+    while (std::getline(ss, line) && line != "\r") {
+        if (line.find(':') != std::string::npos) {
+            std::string name(line.substr(0, line.find(':')));
+            std::string content(line.substr(line.find(':') + 2, line.find('\n')));
+            // std::cout << name << "= " << content << std::endl;
+            if (content.length() != 0)
+                this->headers[name] = content;
+            else
+                throw ClientException(RS400);
+        }
+    }
+
+    if (this->method == "POST") {
+        while (std::getline(ss, line))
+            this->request_content += line;
+        std::cout << "POST CONTENT:\n"
+                  << request_content << std::endl;
+        // if (this->headers["Content-Type"].find("boundary"))
+        //{
+        //     std::string delim = this->headers["Content-Type"].substr(line.find('='), line.find('\n') + 1);
+        //     std::cout << "boundary = " << delim << std::endl;
+        // }
+        if (this->request_content.length() > this->server.getMaxBodySize())
+            throw ClientException(RS413);
+    }
+    // process POST for uploads
 }
 
-void Client::sendDirectoryListing(std::string path)
-{
+void Client::sendDirectoryListing(std::string uri) {
     std::string body;
-    DIR *dir;
-    struct dirent *ent;
-    
-    dir = opendir(path.c_str());
-    while ((ent = readdir(dir)) != NULL)
-    {
+    DIR* dir;
+    struct dirent* ent;
+
+    dir = opendir(uri.c_str());
+    while ((ent = readdir(dir)) != NULL) {
         std::string temp(ent->d_name);
         if (temp == "." || temp == "..")
             continue;
-        body.append("\t<a href=\"" + this->page + "/" + ent->d_name + "\">" + ent->d_name +"</a><br>\n");
+        body.append("\t<a href=\"" + this->uri_target + "/" + ent->d_name + "\">" + ent->d_name + "</a><br>\n");
     }
     closedir(dir);
 
-    const std::string& response = getResponseBoilerPlate("200 OK", path, body);
+    const std::string& response = getResponseBoilerPlate(RS200, this->uri_target.erase(0, 1), body);
 
-    std::cout << "RESPONSE: " << response << std::endl;
     write(this->fd, response.c_str(), response.length());
     request.clear();
 }
 
-void Client::sendResponse(std::string path, std::string code)
-{
-    std::cout << path << std::endl;
-    std::ifstream file(path.c_str(), std::ios::binary | std::ios::in);
+void Client::sendResponse(std::string uri) {
+    messageLog(this->method + " " + uri, RESET, false);
+    std::ifstream file(uri.c_str(), std::ios::binary | std::ios::in);
 
-    if (!file.is_open())
-    {
+    if (!file.is_open()) {
         write(this->fd, server.getErrorResponse().c_str(), server.getErrorResponse().length());
         request.clear();
         return;
     }
 
-    std::string response(getHeader(path, code));
-
-    std::cout << response << std::endl;
-    response.append((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());	
+    std::string response(getOkHeader(uri));
+    response.append((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 
     write(this->fd, response.c_str(), response.length());
     request.clear();
 }
 
-void Client::sendErrorCode(std::string code)
-{
+void Client::sendErrorCode(std::string code) {
     std::string body;
 
     body += "<div style='margin: auto; text-align: center;'>\n";
@@ -94,97 +119,74 @@ void Client::sendErrorCode(std::string code)
     const std::string& response = getResponseBoilerPlate(code, code, body);
 
     write(this->fd, response.c_str(), response.length());
-    request.clear();
-
+    this->request.clear();
 }
 
-// get the path to file, this will be useful when join root + index + path
-void Client::resolveResponse(std::string& root, std::string& path, size_t safety_cap)
-{
+void Client::resolveResponse(std::string& root, std::string& uri, size_t safety_cap) {
+    size_t locate;
+
     if (safety_cap >= 20)
-        throw ClientException("508 Loop Detected");
+        throw ClientException(RS508);
+
+    if (uri == "/favicon.ico") {
+        sendResponse("pages/favicon.png");
+        return;
+    }
 
     locationMap::const_iterator location;
 
-    for (location = server.getLocations().begin(); location != server.getLocations().end(); location++)
-    {
-        if (location->first == "/") continue;
+    for (location = server.getLocations().begin(); location != server.getLocations().end(); location++) {
+        if (location->first == "/" && uri != "/") continue;
 
-        std::string::size_type locate = path.find(location->first);
-        if (locate == std::string::npos) continue;
+        if ((locate = uri.find(location->first)) == std::string::npos) continue;
 
-        if (location->second.redirect.size())
-        {
-            path.erase(locate, location->first.size())
+        if (location->second.allowed_methods.size() != 0 && std::find(location->second.allowed_methods.begin(),
+                                                                      location->second.allowed_methods.end(),
+                                                                      this->method) == location->second.allowed_methods.end())
+            throw ClientException(RS405);
+
+        if (location->second.redirect.size()) {
+            uri.erase(locate, location->first.size())
                 .insert(locate, location->second.redirect);
-            resolveResponse(root, path, safety_cap + 1);
-            return ;
+            resolveResponse(root, uri, safety_cap + 1);
+            return;
         }
 
-        if (location->second.root.size())
-        {
-            path.erase(locate, location->first.size());
+        if (location->second.root.size()) {
+            uri.erase(locate, location->first.size());
             root = location->second.root;
         }
 
-        if (isDirectory((root + path).c_str()))
-        {
+        if (isDirectory((root + uri).c_str())) {
             if (location->second.try_file.size())
-            {
-                sendResponse(root + path + "/" + location->second.try_file, "200");
-                return;
-            }
+                sendResponse(root + uri + "/" + location->second.try_file);
             else if (location->second.auto_index)
-                sendDirectoryListing(root + path.erase(0, 1));
+                sendDirectoryListing(root + uri.erase(0, 1));
+            else if (uri == "/")
+                sendResponse(root + server.getIndex());
             else
-                throw ClientException("403 Forbidden"); 
+                throw ClientException(RS403);
+            return;
         }
     }
 
-    if (path == "/")
-        path += server.getIndex();
-    sendResponse(root + path.erase(0, 1), "200");
+    if (uri == "/")
+        uri += server.getIndex();
+    if (isDirectory((root + uri).c_str()))
+        throw ClientException(RS403);
+    sendResponse(root + uri.erase(0, 1));
 }
 
-/* void Client::responseFavIcon()
-{
-    std::ifstream img_file("folhas.png", std::ios::binary | std::ios::in);
-    if (!img_file.is_open())
-        return;
-
-    std::string response("HTTP/1.1 200 OK\r\nContent-Type: image/png\r\nContent-Length: 85405\r\n\r\n"); header.append("Content-Type: image/" + getExtension("folhas.png") + "\r\n");
-
-    std::string img_as_binary((std::istreambuf_iterator<char>(img_file)), std::istreambuf_iterator<char>());
-    write(this->fd , header.c_str() , header.length());
-    write(this->fd , img_as_binary.c_str(), img_as_binary.length());
-
-} */
-
-void Client::response()
-{
+void Client::response(void) {
     // if already sent or request is not complete return
-    if (request_sent || request.find(REQUEST_DELIMITER) == std::string::npos)
-        return;
-    request_sent = true;
+    this->request_sent = true;
 
-    parseRequest();
-
-    try
-    {
-        std::string root = server.getRoot();
-        std::string path = this->page;
-        resolveResponse(root, path, 0);
+    try {
+        this->parseRequest();
+        std::string root = this->server.getRoot();
+        std::string uri = this->uri_target;
+        this->resolveResponse(root, uri, 0);
+    } catch (const std::exception& e) {
+        this->sendErrorCode(e.what());
     }
-    catch(const std::exception& e)
-    {
-        sendErrorCode(e.what());
-    }
-    
-
-    /* if (type == FAVICON)
-    {
-        responseFavIcon();
-        return;
-    }
-    */
 }

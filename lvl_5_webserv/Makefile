@@ -5,10 +5,11 @@ VPATH = srcs srcs/utils
 RM = rm -rf
 
 UTILS = splitStr sliceVec time file trimStr
-GENERAL = Lexer WebServ Client Server parseConfigFile CGI
+GENERAL = Lexer WebServ Client Server  CGI
 
 NAME = webserv
 TEST_CONFIG_FILE = config/inception.conf
+CRASH_CONFIG_FILE = config/crash.conf
 
 SRCS = $(addsuffix .cpp, $(UTILS))\
 	   $(addsuffix .cpp, $(GENERAL))\
@@ -43,6 +44,10 @@ re: fclean all
 run: all clean
 	echo ""
 	./$(NAME) $(TEST_CONFIG_FILE)
+
+crash: all clean
+	echo ""
+	./$(NAME) $(CRASH_CONFIG_FILE)
 
 noleaks: re clean
 	echo ""

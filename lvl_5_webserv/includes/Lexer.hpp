@@ -1,9 +1,9 @@
 #ifndef LEXER_HPP
 #define LEXER_HPP
 
+#include <fstream>
 #include <map>
 #include <string>
-#include <fstream>
 
 enum TokenType {
     KEYWORD,
@@ -18,31 +18,32 @@ struct Token {
 };
 
 class Lexer {
-    public:
-        Lexer(const std::string& filename);
-        ~Lexer(void);
-        Token nextToken(void);
+   public:
+    Lexer(const std::string& filename);
+    ~Lexer(void);
+    Token nextToken(void);
 
-        // Keyword, parameter
-        std::map<std::string, std::string> parameters;
+    // Keyword, parameter
+    std::map<std::string, std::string> parameters;
 
-        class LexerException : public std::exception {
-            public:
-                LexerException(const std::string& message) : message(message) {};
-
-                virtual const char* what() const throw() {
-                    return message.c_str();
-                };
-            private:
-                const std::string& message;
+    class LexerException : public std::exception {
+       public:
+        std::string message;
+        LexerException(std::string message) : message("config file: " + message){};
+        ~LexerException() throw(){};
+        virtual const char* what() const throw() {
+            return message.c_str();
         };
+    };
 
-    private:
-        std::ifstream file;
-        char current_char;
-        void consumeWhiteSpace(void);
-        void consumeComment(void);
-        void consumeKeyword(std::string& token_value);
+   private:
+    bool has_server;
+    size_t line_nr;
+    std::ifstream file;
+    char current_char;
+    void consumeWhiteSpace(void);
+    void consumeComment(void);
+    void consumeKeyword(std::string& token_value);
 };
 
-#endif // LEXER_HPP
+#endif  // LEXER_HPP

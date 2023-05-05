@@ -1,37 +1,56 @@
-# include <stdlib.h>
-# include <unistd.h>
-# include <errno.h>
-# include <sstream>
-# include <fstream>
-# include "Server.hpp"
-# include "WebServ.hpp"
+#include <stdlib.h>
+#include <unistd.h>
+#include <errno.h>
+#include <sstream>
+#include <fstream>
+#include "Server.hpp"
+#include "WebServ.hpp"
 
+/**
+ * @brief Validates the ClientMaxBodySize converting the str to its correspondent integer
+ * @param str string representation of the ClientMaxBodySize number
+ * @return On success: ClientMaxBodySize number
+ * On error: throws an Exception
+ */
 static size_t parseClientMaxBodySize(const std::string& str)
 {
-    size_t n = strtoul(str.c_str(), NULL, 10);
+    unsigned long n = strtoul(str.c_str(), NULL, 10);
 	bool strtoul_success = (n == UINT64_MAX && errno == ERANGE) ? false : true;
 
 	if (str.find_first_not_of("0123456789") != std::string::npos 
 	|| !strtoul_success)
-		throw WebServ::ParserException("invalid client_max_body_size value");
+		throw WebServ::ParserException("invalid client_max_body_size value \"" + str + "\"");
 	return n;
 }
 
 /**
- * @brief Converts the string representation of the port to its correspondent integer
+ * @brief Validates the port converting the str to its correspondent integer
  * @param port_as_str string representation of the port number
- * @return On success: port number
- * On error: -1 (invalid port number)
+ * @return On success: port number as a string
+ * On error: throws an Exception
  */
 static std::string parsePortNumber(const std::string& port_as_str)
 {
-	unsigned long temp = strtoul(port_as_str.c_str(), NULL, 10);
+    unsigned long temp = strtoul(port_as_str.c_str(), NULL, 10);
 	bool strtoul_success = (temp == UINT64_MAX && errno == ERANGE) ? false : true;
 
 	if (port_as_str.find_first_not_of("0123456789") != std::string::npos 
 	|| !strtoul_success || temp > UINT16_MAX)
-		throw WebServ::ParserException("invalid port number");
+		throw WebServ::ParserException("invalid port number \"" + port_as_str + "\"");
 	return port_as_str;
+}
+
+std::string Server::createErrorResponse(void)
+{
+    std::string path_to_error_page = this->root + this->errorPagePath;
+    std::ifstream error_page_file(path_to_error_page.c_str(), std::ios::binary | std::ios::in);
+
+    std::string error_response = "HTTP/1.1 400 Not Found\n"
+                                 "Content-Type: " + getFileType(path_to_error_page) + ";"
+                                 "charset=UTC-8\nContent-Length: " + getFileSize(path_to_error_page) + "\n\n";
+
+    error_response.append((std::istreambuf_iterator<char>(error_page_file)), std::istreambuf_iterator<char>());
+    return error_response;
 }
 
 Server::Server(std::map<std::string, std::string>& parameters)
@@ -47,7 +66,7 @@ Server::Server(std::map<std::string, std::string>& parameters)
 
     for (size_t i = 0; i < 6; i += 1) {
         if (parameters.count(mustHaveKeyWords[i]) == 0)
-            throw WebServ::ParserException("No provided value for " + mustHaveKeyWords[i]);
+            throw WebServ::ParserException("no provided value for " + mustHaveKeyWords[i]);
     }
 
     this->port = parsePortNumber(parameters["listen"]);
@@ -55,38 +74,28 @@ Server::Server(std::map<std::string, std::string>& parameters)
     this->host = parameters["host"];
     this->root = parameters["root"];
 
-    std::string& temp = parameters["error_page"];
+    const std::string& temp = parameters["error_page"];
     if (access(std::string(this->root + temp.c_str()).c_str(), R_OK) != 0) {
-        throw WebServ::ParserException("invalid error_page");
+        throw WebServ::ParserException("invalid error_page \"" + temp + "\"\n"
+                                      + "expanded to -> \"" + (this->root + temp.c_str()) + "\"");
     }
 
     this->errorPagePath = temp;
     this->index = parameters["index"];
     this->clientMaxBodySize = parseClientMaxBodySize(parameters["client_max_body_size"]);
-
-    this->createErrorResponse();
+    this->errorResponse = createErrorResponse();
+    this->isDefaultServer = true;
 }
 
-void Server::createErrorResponse()
-{
-    std::string path_to_error_page = this->root + this->errorPagePath;
-
-    std::ifstream file(path_to_error_page.c_str(), std::ios::binary | std::ios::in);
-
-    this->error_response = "HTTP/1.1 400 Not Found\nContent-Type: " + getFileType(path_to_error_page) + "; charset=UTC-8\nContent-Length: " + getFileSize(path_to_error_page) + "\n\n";
-    
-    this->error_response.append((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-}
-
-void Server::addLocation(std::pair<std::string, location_t> newLocationPair) {
+void Server::addLocation(locationPair newLocationPair) {
     this->locations.insert(newLocationPair);
 }
 
 void Server::createSocket(void)
 {
-    this->socket_fd = socket(AF_INET, SOCK_STREAM, 0);
-	if (this->socket_fd == -1)
-		throw std::out_of_range(SOCKET_OPEN_ERR);
+    this->socketFd = socket(AF_INET, SOCK_STREAM, 0);
+	if (this->socketFd == -1)
+		throw std::runtime_error(SOCKET_OPEN_ERR);
 }
 
 std::ostream &operator<<(std::ostream &stream, Server& sv)
@@ -100,7 +109,7 @@ std::ostream &operator<<(std::ostream &stream, Server& sv)
            << "CLIENT_MAX_BODY_SIZE = " << sv.getMaxBodySize() << '\n'
            << "LOCATIONS --------------" << '\n';
 
-    std::map<std::string, location_t>::iterator itr;
+    locationMap::iterator itr;
     for (itr = sv.locations.begin(); itr != sv.locations.end(); itr++)
     {
         stream << '\n' << "location " << itr->first << '\n'

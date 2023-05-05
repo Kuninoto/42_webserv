@@ -2,14 +2,14 @@
 #define SERVER_HPP
 
 #include <stdint.h>
+#include <sys/socket.h>
+
+#include <map>
+#include <sstream>
 #include <string>
 #include <vector>
-#include <map>
-#include <sys/socket.h>
-#include <sstream>
 
 #define SOCKET_OPEN_ERR "fatal: failed to open socket"
-#define SETSOCKETOPT_ERR "fatal: settockopt() failed"
 
 typedef struct location_s {
     std::string root;
@@ -19,51 +19,48 @@ typedef struct location_s {
     std::string try_file;
     std::string cgi_path;
     std::string cgi_ext;
-}               location_t;
+} location_t;
 
 typedef std::map<std::string, location_t> locationMap;
 typedef std::pair<std::string, location_t> locationPair;
 
 class Server {
-    public:
-        Server(std::map<std::string, std::string>& parameters);
-		~Server(void) {};
+   public:
+    Server(std::map<std::string, std::string>& parameters);
+    ~Server(void){};
 
-        const std::string& getPort(void) const { return this->port; };
-        const std::string& getHost(void) const { return this->host; };
-        const std::string& getIndex(void) const { return this->index; };
-        const std::string& getServerName(void) const { return this->serverName; };
-        const std::string& getErrorPagePath(void) const { return this->errorPagePath; };
-        const std::string& getRoot(void) const { return this->root; };
-        const locationMap& getLocations() const { return this->locations; };
-        std::string getErrorResponse(void){ return this->error_response; };
-        size_t getMaxBodySize(void) const { return this->clientMaxBodySize; };
-		int getSocketFd(void) const { return this->socket_fd; };
-        void addLocation(std::pair<std::string, location_t> locationPair);
-		void createSocket(void);
+    const std::string& getPort(void) const { return this->port; };
+    const std::string& getHost(void) const { return this->host; };
+    const std::string& getIndex(void) const { return this->index; };
+    const std::string& getServerName(void) const { return this->serverName; };
+    const std::string& getErrorPagePath(void) const { return this->errorPagePath; };
+    const std::string& getRoot(void) const { return this->root; };
+    const locationMap& getLocations() const { return this->locations; };
+    std::string getErrorResponse(void) { return this->errorResponse; };
+    size_t getMaxBodySize(void) const { return this->clientMaxBodySize; };
+    int getSocketFd(void) const { return this->socketFd; };
 
-        locationMap locations;
+    void addLocation(locationPair locationPair);
+    void createSocket(void);
 
-    private:
-        // 8080
-        std::string port;
-        // localhost
-        std::string serverName;
-        // 127.0.0.1
-        std::string host;
-        // 404 pages/error/404.html
-        std::string errorPagePath;
-        std::string root;
-        std::string index;
-        size_t clientMaxBodySize;
+    bool isDefaultServer;  // default for host:port
 
-        std::string error_response;
+    locationMap locations;
 
-		int	socket_fd;
+   private:
+    std::string port;
+    std::string host;
+    std::string serverName;
+    std::string index;
+    std::string errorPagePath;
+    std::string root;
+    size_t clientMaxBodySize;
+    std::string errorResponse;
+    int socketFd;
 
-        void createErrorResponse();
+    std::string createErrorResponse(void);
 };
 
-std::ostream &operator<<(std::ostream &stream, Server& sv);
+std::ostream& operator<<(std::ostream& stream, Server& sv);
 
-#endif // SERVER_HPP
+#endif  // SERVER_HPP

@@ -1,5 +1,4 @@
 #include <string>
-#include <iostream>
 
 void trimStr(std::string& str, const char *set)
 {
