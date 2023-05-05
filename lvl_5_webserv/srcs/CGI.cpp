@@ -157,35 +157,35 @@ bool	CGI::getExtension(void)
  */
 void CGI::runScript(void)
 {
-    pid_t pid;
-    if(!deleteFile())
-        throw(CGIException("File not deleted"));
+	pid_t pid;
+	if(!deleteFile())
+		throw(CGIException("File not deleted"));
 
-    int output_fd = open(".output", O_WRONLY | O_CREAT | O_TRUNC, 0644);
-    if (output_fd == -1)
-        throw (CGIException("open() failed"));
+	int output_fd = open(".output", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+	if (output_fd == -1)
+		throw (CGIException("open() failed"));
 
-    pid = fork();
-    if (pid == -1)
-        throw (CGIException("fork() failed"));
+	pid = fork();
+	if (pid == -1)
+		throw (CGIException("fork() failed"));
 
-    // child
-    if (pid == 0)
-    {
-        dup2(output_fd, STDOUT_FILENO);
-        close(output_fd);
-        creatArgs();
-        execve(runner.c_str(), args, NULL);
-        // only gets here if execve fails
-        throw (CGIException("execve() failed"));
-    }
-    else
-    {
-        int status;
-        while (waitpid(pid, &status, 0) == -1);
+	// child
+	if (pid == 0)
+	{
+		dup2(output_fd, STDOUT_FILENO);
+		close(output_fd);
+		creatArgs();
+		execve(runner.c_str(), args, NULL);
+		// only gets here if execve fails
+		throw (CGIException("execve() failed"));
+	}
+	else
+	{
+		int status;
+		while (waitpid(pid, &status, 0) == -1);
 
-        close(output_fd);
-    }
+		close(output_fd);
+	}
 }
 
 bool CGI::deleteFile() {
