@@ -74,22 +74,18 @@ void Client::parseRequest(void) {
 }
 
 void Client::handlePostRequest() {
-	// Get the content type from the headers map
-	std::string contentType = this->headers["Content-Type"];
-
-	std::cout << "DEBUG: " << contentType << std::endl;
-	
-	// Check if the content type is JSON
-	if (contentType == "application/x-www-form-urlencoded") {
-	
-			std::cout << "Running CGI..." << std::endl;
-			CGI cgi;
-			std::cout << "CGI finished running" << std::endl;
-			// Send a response back to the client indicating success
-			std::string response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n";
-			this->sendResponse(response);
+	try
+	{
+		std::cout << "DEBUG: Running CGI..." << std::endl;
+		CGI cgi;
+		std::cout << "DEBUG: CGI finished running" << std::endl;
+		// Send a response back to the client indicating success
+		std::string response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n";
+		this->sendResponse(response);
 	}
-	else {
+	catch(const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
 		std::string response = "HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\n\r\n";
 		this->sendResponse(response);
 	}
