@@ -26,50 +26,68 @@
 
 class Client {
    public:
-    Client(Server server, int fd);
-    std::string getRequest(void) { return this->request; };
-    void setRequest(std::string request);
+	Client(Server server, int fd);
+	std::string getRequest(void) { return this->request; };
+	void setRequest(std::string request);
 
-    void response(void);
+	void response(void);
 
-    Server& getTargetServer(void) { return this->server; };
-    void setTargetServer(Server& server) { this->server = server; } ;
-    bool preparedToSend(void) {
-        return !(this->request_sent || this->request.find(REQUEST_DELIMITER) == std::string::npos);
-    };
+	Server& getTargetServer(void) { return this->server; };
+	void setTargetServer(Server& server) { this->server = server; } ;
+	bool preparedToSend(void) {
+		return !(this->request_sent || this->request.find(REQUEST_DELIMITER) == std::string::npos);
+	};
 
-    class ClientException : public std::exception {
-       public:
-        std::string s;
-        ClientException(std::string ss) : s(ss){};
-        ~ClientException() throw() {}
+	class ClientException : public std::exception {
+	   public:
+		std::string s;
+		ClientException(std::string ss) : s(ss){};
+		~ClientException() throw() {}
 
-        virtual const char* what() const throw() {
-            return s.c_str();
-        };
-    };
+		virtual const char* what() const throw() {
+			return s.c_str();
+		};
+	};
 
-    std::map<std::string, std::string> headers;
+	std::map<std::string, std::string> headers;
+
+	template<typename K, typename V>
+	void printMap(const std::map<K, V>& myMap)
+	{
+		std::cout << "-------------------------------" << std::endl;
+		std::cout << "Printing map contents:" << std::endl;
+
+		for (typename std::map<K, V>::const_iterator it = myMap.begin(); it != myMap.end(); ++it)
+		{
+			std::cout << it->first << " : " << it->second << std::endl;
+		}
+		std::cout << "-------------------------------" << std::endl;
+	}
 
    private:
-    Server server;
+	Server server;
 
-    int fd;
+	int fd;
 
-    bool request_sent;
-    std::string method;
+	bool request_sent;
 
-    std::string request;
-    std::string uri_target;
-    std::string request_content;
+	std::vector<std::string> components;
+	std::string method;
 
-    void parseRequest(void);
-    void resolveResponse(std::string& root, std::string& uri, size_t safety_cap);
-    void responseFavIcon(void);
-    void sendDirectoryListing(std::string uri);
-    void sendResponse(std::string uri);
-    void sendErrorCode(std::string code);
-    // std::string resolvePathAndLocation(void);
+	std::string request;
+	std::string uri_target;
+	std::string request_content;
+
+	void parseRequest(void);
+	void resolveResponse(std::string& root, std::string& uri, size_t safety_cap);
+	void responseFavIcon(void);
+	void sendDirectoryListing(std::string uri);
+	void sendResponse(std::string uri);
+	void sendErrorCode(std::string code);
+	void createEnvVars();
+	void handlePostRequest();
+
+	// std::string resolvePathAndLocation(void);
 };
 
 #endif  // CLIENT_HPP
