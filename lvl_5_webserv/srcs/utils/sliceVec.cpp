@@ -7,8 +7,7 @@
  * @return slice of original vec
  */
 template <typename T>
-std::vector<T> sliceVec(std::vector<T>& vec, unsigned int start_idx, unsigned int end_idx)
-{
+std::vector<T> sliceVec(std::vector<T>& vec, unsigned int start_idx, unsigned int end_idx) {
     typename std::vector<T>::iterator start_itr = vec.begin() + start_idx;
     typename std::vector<T>::iterator end_itr = vec.begin() + end_idx + 1;
 
