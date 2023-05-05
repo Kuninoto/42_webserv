@@ -4,6 +4,8 @@
 #include <iostream>
 #include <sstream>
 
+#include "utils.hpp"
+
 bool isValidKeyword(const std::string& value) {
     static const std::string keywords[16] = {"server", "listen", "host", "index",
                                              "server_name", "root", "error_page",
@@ -83,7 +85,7 @@ void Lexer::consumeComment(void) {
         this->current_char = file.get();
 }
 
-void Lexer::consumeKeyword(std::string &token_value) {
+void Lexer::consumeKeyword(std::string& token_value) {
     std::string parameter_value;
 
     while (!this->file.eof() && (isalnum(current_char) || current_char == '_')) {

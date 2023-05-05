@@ -6,15 +6,14 @@
 #include "libwebserv.hpp"
 
 #define NR_PENDING_CONNECTIONS 10
-#define MAX_EVENTS 64
+#define MAX_EVENTS 10
 
 #define SETSOCKETOPT_FAIL "fatal: setsocketopt() failed"
-#define EPOLL_CREATE_FAIL "fatal: epoll_create() failed"
-#define EPOLL_WAIT_FAIL "fatal: epoll_wait() failed"
-#define EPOLL_CTL_FAIL "fatal: epoll_ctl() failed"
 #define GETADDRINFO_FAIL "fatal: getaddrinfo() failed"
 #define BIND_FAIL "fatal: bind() failed"
+#define POLL_FAIL "fatal: poll() failed"
 #define ACCEPT_FAIL "fatal: accept() failed"
+#define LISTEN_FAIL "fatal: listen() failed"
 
 class WebServ {
    public:
@@ -47,12 +46,13 @@ class WebServ {
     size_t getServerUsedSockets(void);
 
     Server& getServerByName(const std::string& buffer, Server& default_server);
+    bool isFdAServer(int fd);
 
     std::map<std::string, std::string> params;
 
-    int epollFd;
+    std::vector<struct pollfd> pollfds;
 
-    size_t reserved_sockets, open_fds;
+    size_t reserved_sockets;
 
     void readLocationBlock(Lexer& lexer, Token& token);
 
