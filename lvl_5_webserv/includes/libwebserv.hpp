@@ -1,20 +1,22 @@
 #ifndef LIBWEBSERV_HPP
 #define LIBWEBSERV_HPP
 
-#include <cstdlib>
-#include <string>
+#include <memory.h>
+#include <poll.h>
 #include <unistd.h>
+
+#include <cstdlib>
 #include <iostream>
 #include <sys/epoll.h>
 #include <memory.h>
 #include <vector>
 
-#include "utils.hpp"
+#include "CGI.hpp"
+#include "Client.hpp"
 #include "Lexer.hpp"
 #include "Server.hpp"
-#include "Client.hpp"
-#include "CGI.hpp"
 #include "WebServ.hpp"
+#include "utils.hpp"
 
 #define ERROR_MSG_PREFFIX "webserv: error: "
 #define ARGS_ERR "invalid arguments"
@@ -25,10 +27,9 @@
  *
  * @return 1, representing a failure exit status
  */
-static inline int panic(const std::string &error_msg)
-{
+static inline int panic(const std::string &error_msg) {
     std::cerr << ERROR_MSG_PREFFIX << error_msg << std::endl;
     return EXIT_FAILURE;
 }
 
-#endif // LIBWEBSERV_HPP
+#endif  // LIBWEBSERV_HPP

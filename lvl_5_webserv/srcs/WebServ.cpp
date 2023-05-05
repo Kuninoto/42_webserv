@@ -47,7 +47,7 @@ void WebServ::bootServers(void) {
         server->createSocket();
 
         if (setsockopt(server->getSocketFd(), SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(int)) < 0)
-            throw std::runtime_error(SETSOCKETOPT_ERR);
+            throw std::runtime_error(SETSOCKETOPT_FAIL);
 
         if (getaddrinfo(server->getHost().c_str(), server->getPort().c_str(), &hints, &result) != 0)
             throw std::runtime_error(GETADDRINFO_FAIL);
@@ -154,14 +154,14 @@ size_t WebServ::getServerUsedSockets(void) {
     size_t used_sockets = 0;
 
     for (server = this->servers.begin(); server != this->servers.end(); server++) {
-        if (!server->getSkipBind()) used_sockets += 1;
+        if (!server->getSkipBind())
+            used_sockets += 1;
     }
 
     return used_sockets;
 }
 
 Server& WebServ::getServerByName(const std::string& buffer, Server& default_server) {
-    std::vector<Server>::iterator server;
     std::string requested_server_name;
 
     if (size_t n = buffer.find("Host:")) {
@@ -169,6 +169,7 @@ Server& WebServ::getServerByName(const std::string& buffer, Server& default_serv
         requested_server_name = buffer.substr(n, (buffer.find("\n", n) - n - 1));
     }
 
+    std::vector<Server>::iterator server;
     for (server = this->servers.begin(); server != this->servers.end(); server++) {
         if (requested_server_name == server->getServerName() && server->getHost() == default_server.getHost())
             return *server;
@@ -176,11 +177,10 @@ Server& WebServ::getServerByName(const std::string& buffer, Server& default_serv
     return default_server;
 }
 
-std::vector<Server> WebServ::parseConfigFile(std::string filename) {
+std::vector<Server> WebServ::parseConfigFile(const std::string& filename) {
     Lexer lexer(filename);
     std::vector<Server> servers;
 
-    // Parse Server scopes
     Token token = lexer.nextToken();
     while (token.type != END_OF_FILE) {
         bool hasLocation = false;
@@ -191,6 +191,7 @@ std::vector<Server> WebServ::parseConfigFile(std::string filename) {
                 if (token.type != LEFT_CURLY_BRACKET)
                     throw WebServ::ParserException("no opening bracket for server");
             }
+
             if (token.type == LEFT_CURLY_BRACKET) {
                 curly_brackets += 1;
             } else if (token.type == RIGHT_CURLY_BRACKET) {
@@ -213,17 +214,20 @@ std::vector<Server> WebServ::parseConfigFile(std::string filename) {
             } else if (curly_brackets == 0) {
                 break;
             }
+
             token = lexer.nextToken();
         }
-        if (curly_brackets > 0)
+
+        if (curly_brackets != 0)
             throw WebServ::ParserException("Unclosed curly brackets");
         token = lexer.nextToken();
     }
+
     return servers;
 }
 
-locationPair WebServ::parseLocation(const std::map<std::string, std::string>& lexerParameters,
-                                    std::string& locationPath) {
+locationPair WebServ::parseLocation(const std::map<std::string, std::string> &lexerParameters,
+                                    std::string &locationPath) {
     location_t locationStruct;
     bzero(&locationStruct, sizeof(location_t));
 
@@ -240,7 +244,7 @@ locationPair WebServ::parseLocation(const std::map<std::string, std::string>& le
     if (lexerParameters.count("cgi_path") > 0) {
         std::string temp = lexerParameters.find("cgi_path")->second;
         if (access(temp.c_str(), X_OK) != 0) {
-            throw WebServ::ParserException("invalid cgi_path");
+            throw WebServ::ParserException("invalid cgi_path \"" + temp + "\"");
         }
         locationStruct.cgi_path = temp;
     }
@@ -250,7 +254,7 @@ locationPair WebServ::parseLocation(const std::map<std::string, std::string>& le
     return std::make_pair<std::string, location_t>(locationPath, locationStruct);
 }
 
-void WebServ::readLocationBlock(Lexer& lexer, Token& token) {
+void WebServ::readLocationBlock(Lexer &lexer, Token &token) {
     token = lexer.nextToken();
     while (token.type != RIGHT_CURLY_BRACKET) {
         token = lexer.nextToken();

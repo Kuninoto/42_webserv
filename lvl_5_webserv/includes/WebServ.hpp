@@ -8,13 +8,13 @@
 #define NR_PENDING_CONNECTIONS 10
 #define MAX_EVENTS 64
 
+#define SETSOCKETOPT_FAIL "fatal: setsocketopt() failed"
 #define EPOLL_CREATE_FAIL "fatal: epoll_create() failed"
 #define EPOLL_WAIT_FAIL "fatal: epoll_wait() failed"
 #define EPOLL_CTL_FAIL "fatal: epoll_ctl() failed"
 #define GETADDRINFO_FAIL "fatal: getaddrinfo() failed"
 #define BIND_FAIL "fatal: bind() failed"
 #define ACCEPT_FAIL "fatal: accept() failed"
-
 
 class WebServ {
    public:
@@ -26,7 +26,7 @@ class WebServ {
     void bootServers(void);
     void runServers(void);
 
-    std::vector<Server> parseConfigFile(std::string filename);
+    std::vector<Server> parseConfigFile(const std::string& filename);
 
     class ParserException : public std::exception {
        public:
