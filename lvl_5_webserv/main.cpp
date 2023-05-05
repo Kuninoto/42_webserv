@@ -13,12 +13,13 @@ int main(int argc, char **argv)
 	try {
 		cout << getTimeStamp() << endl;
 		WebServ webserv(argv[1]);
+		messageLog("Booting servers...", RESET, false);
 		webserv.bootServers();
 		webserv.runServers();
 		return EXIT_SUCCESS;
 	}
 	catch (std::exception& e) {
-		cerr << ERROR_MSG_PREFFIX << e.what() << endl;
+		cerr << ERROR_MSG_PREFFIX << e.what() << '\n';
 		return EXIT_FAILURE;
 	}
 }

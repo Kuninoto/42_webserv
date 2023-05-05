@@ -23,21 +23,28 @@ Lexer::Lexer(const std::string& filename) {
     file.open(filename.c_str());
     if (!file.is_open())
         throw LexerException("Failed to open config file");
-    current_char = file.get();
+    this->line_nr = 1;
+    this->has_server = false;
+    this->current_char = file.get();
 }
 
 Token Lexer::nextToken(void) {
     std::string value;
 
-    // Skip whitespace and comments
     while (!file.eof()) {
+        if (current_char == '\n') {
+            this->line_nr += 1;
+            current_char = file.get();
+            continue;
+        }
+        // Skip whitespace
         if (isspace(current_char)) {
-            consumeWhiteSpace();
+            this->consumeWhiteSpace();
             continue;
         }
         // COMMENT
         if (current_char == '#') {
-            consumeComment();
+            this->consumeComment();
             continue;
         }
 
@@ -53,6 +60,7 @@ Token Lexer::nextToken(void) {
 
         if (isalpha(current_char)) {
             value += current_char;
+            current_char = this->file.get();
             consumeKeyword(value);
             return (Token){KEYWORD, value};
         }
@@ -63,8 +71,11 @@ Token Lexer::nextToken(void) {
 }
 
 void Lexer::consumeWhiteSpace(void) {
-    while (!this->file.eof() && isspace(this->current_char))
+    while (!this->file.eof() && isspace(this->current_char)) {
+        if (this->current_char == '\n')
+            return;
         this->current_char = file.get();
+    }
 }
 
 void Lexer::consumeComment(void) {
@@ -72,8 +83,7 @@ void Lexer::consumeComment(void) {
         this->current_char = file.get();
 }
 
-void Lexer::consumeKeyword(std::string& token_value) {
-    current_char = this->file.get();
+void Lexer::consumeKeyword(std::string &token_value) {
     std::string parameter_value;
 
     while (!this->file.eof() && (isalnum(current_char) || current_char == '_')) {
@@ -81,28 +91,35 @@ void Lexer::consumeKeyword(std::string& token_value) {
         current_char = this->file.get();
     }
     if (!isValidKeyword(token_value))
-        throw LexerException("Unknown keyword \"" + token_value + "\"");
-    if (token_value == "server")
+        throw LexerException("line " + ft_ntos(this->line_nr) + ": unknown keyword \"" + token_value + "\"");
+    if (token_value == "server") {
+        this->has_server = true;
         return;
+    }
     // Check for parameters
     if (current_char == ' ') {
         consumeWhiteSpace();
+        if (current_char == ';')
+            throw LexerException("line " + ft_ntos(this->line_nr) + ": empty parameter found for keyword \"" + token_value + "\"");
         parameter_value = "";
         if (token_value == "location") {
             while (!this->file.eof() && current_char != '{') {
+                if (current_char == '\n')
+                    throw LexerException("line " + ft_ntos(this->line_nr) + ": missing '{'");
                 parameter_value += current_char;
                 current_char = this->file.get();
             }
         } else {
+            consumeWhiteSpace();
             while (!this->file.eof() && current_char != ';') {
                 if (current_char == ' ' && token_value != "allow_methods")
-                    throw LexerException("Keyword \"" + token_value + "\" has more than one parameter");
+                    throw LexerException("line " + ft_ntos(this->line_nr) + ": keyword \"" + token_value + "\" has more than one parameter");
+                if (current_char == '\n')
+                    throw LexerException("line " + ft_ntos(this->line_nr) + ": Missing ';'");
                 parameter_value += current_char;
                 current_char = this->file.get();
             }
         }
-        if (parameter_value.empty())
-            throw LexerException("Empty parameter found for keyword \"" + token_value + "\"");
         parameters[token_value] = parameter_value;
     }
     this->current_char = this->file.get();
