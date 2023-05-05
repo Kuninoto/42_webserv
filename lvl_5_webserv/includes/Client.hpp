@@ -32,6 +32,7 @@ class Client {
 
     void response(void);
 
+    int getFd(void) const { return this->fd; };
     Server& getTargetServer(void) { return this->server; };
     void setTargetServer(Server& server) { this->server = server; } ;
     bool preparedToSend(void) {

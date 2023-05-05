@@ -3,7 +3,8 @@ DELETE method (?)
 Make the route able to accept uploaded files and configure where they should
 be saved
 Connection Timeout
-Refactor the server_name handling
+Refactor the server_name handling (Webserv.cpp)
+Consecutive Refreshes
 
 CGI (POST and GET)
 

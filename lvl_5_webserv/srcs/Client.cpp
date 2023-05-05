@@ -177,6 +177,8 @@ void Client::resolveResponse(std::string& root, std::string& uri, size_t safety_
 }
 
 void Client::response(void) {
+    if (!this->preparedToSend())
+        return;
     this->request_sent = true;
 
     try {

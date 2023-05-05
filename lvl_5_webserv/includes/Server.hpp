@@ -39,9 +39,6 @@ class Server {
     std::string getErrorResponse(void) { return this->errorResponse; };
     size_t getMaxBodySize(void) const { return this->clientMaxBodySize; };
     int getSocketFd(void) const { return this->socketFd; };
-    bool getSkipBind(void) { return this->skip_bind; };
-
-    void setSkipBind(void) { this->skip_bind = true; };
 
     void addLocation(locationPair locationPair);
     void createSocket(void);
@@ -60,8 +57,6 @@ class Server {
     size_t clientMaxBodySize;
     std::string errorResponse;
     int socketFd;
-
-    bool skip_bind;
 
     std::string createErrorResponse(void);
 };

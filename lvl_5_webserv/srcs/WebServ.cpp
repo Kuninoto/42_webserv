@@ -1,5 +1,6 @@
 #include "WebServ.hpp"
 
+#include <fcntl.h>
 #include <memory.h>
 #include <netdb.h>
 #include <signal.h>
@@ -22,18 +23,23 @@ WebServ::WebServ(std::string filename) {
     this->servers = this->parseConfigFile(filename);
     this->duplicateServers();
 
-    this->epollFd = epoll_create(MAX_EVENTS);
-    if (this->epollFd == -1)
-        throw std::runtime_error(EPOLL_CREATE_FAIL);
-
-    this->reserved_sockets = this->open_fds = this->getServerUsedSockets();
+    this->reserved_sockets = this->getServerUsedSockets();
 };
+
+bool WebServ::isFdAServer(int fd) {
+    std::vector<Server>::iterator v_it;
+    std::vector<Server>::iterator v_end = this->servers.end();
+
+    for (v_it = this->servers.begin(); v_it != v_end; v_it++) {
+        if (fd == v_it->getSocketFd())
+            return true;
+    }
+    return false;
+}
 
 void WebServ::bootServers(void) {
     int opt = 1;
     struct addrinfo hints, *result;
-    struct epoll_event ev;
-    ev.events = EPOLLIN;
 
     bzero(&hints, sizeof(hints));
     hints.ai_family = AF_INET;
@@ -42,7 +48,9 @@ void WebServ::bootServers(void) {
 
     std::vector<Server>::iterator server;
     for (server = servers.begin(); server != servers.end(); server++) {
-        if (server->getSkipBind()) continue;
+        if (!server->isDefaultServer)
+            continue;
+        struct pollfd pollstruct;
 
         server->createSocket();
 
@@ -55,80 +63,78 @@ void WebServ::bootServers(void) {
         if (bind(server->getSocketFd(), result->ai_addr, result->ai_addrlen) == -1)
             throw std::runtime_error(BIND_FAIL);
 
-        listen(server->getSocketFd(), NR_PENDING_CONNECTIONS);
-
-        ev.data.fd = server->getSocketFd();
-        if (epoll_ctl(this->epollFd, EPOLL_CTL_ADD, server->getSocketFd(), &ev) == -1)
-            throw std::runtime_error(EPOLL_CTL_FAIL);
+        if (listen(server->getSocketFd(), NR_PENDING_CONNECTIONS) == -1)
+            throw std::runtime_error(LISTEN_FAIL);
 
         freeaddrinfo(result);
+        pollstruct.fd = server->getSocketFd();
+        pollstruct.events = POLLIN;
+        pollstruct.revents = 0;
+        pollfds.push_back(pollstruct);
         messageLog(server->getHost() + ":" + server->getPort(), BLUE, false);
     }
 }
 
 void WebServ::runServers(void) {
-    int nfds;
-    struct epoll_event ev, events[MAX_EVENTS];
+    bool popped = false;
 
-    while (true) {
-        if ((nfds = epoll_wait(this->epollFd, events, MAX_EVENTS, -1)) == -1)
-            throw std::runtime_error(EPOLL_WAIT_FAIL);
-
-        if (g_stopServer)
-            break;
-
-        for (size_t i = 0; i < open_fds; i += 1) {
-            char buffer[1024] = {0};
-            if (events[i].data.fd < servers.at(0).getSocketFd())
+    while (!g_stopServer) {
+        if (poll(this->pollfds.data(), this->pollfds.size(), 200) == -1 && !g_stopServer)
+            throw std::runtime_error(POLL_FAIL);
+        for (size_t i = 0; i < this->pollfds.size(); i += 1) {
+            if (popped == true)
                 continue;
+            // if (pollfds.at(i).fd < servers.at(0).getSocketFd())
+            //     continue;
 
-            if (events[i].events & EPOLLIN) {
-                // if triggeredFdIsServer
-                if (events[i].data.fd == servers.at(0).getSocketFd() || events[i].data.fd == servers.at(1).getSocketFd()) {
-                    this->open_fds += 1;
+            if (pollfds.at(i).revents & POLLIN) {
+                int clientFdIdx = i - reserved_sockets;
+                char buffer[1024] = {0};
 
+                if (isFdAServer(this->pollfds.at(i).fd)) {
                     int conn_socket = accept(servers.at(i).getSocketFd(), NULL, NULL);
                     if (conn_socket == -1)
                         throw std::runtime_error(ACCEPT_FAIL);
 
-                    // setnonblocking(conn_sock);
-                    ev.events = EPOLLIN | EPOLLOUT;
-                    ev.data.fd = conn_socket;
-                    if (epoll_ctl(this->epollFd, EPOLL_CTL_ADD, conn_socket, &ev) == -1)
-                        throw std::runtime_error(EPOLL_CTL_FAIL);
+                    fcntl(conn_socket, F_SETFL, O_NONBLOCK);
 
-                    recv(conn_socket, buffer, 1023, 0);
-                    buffer[1023] = '\0';
+                    clients.push_back(Client(servers.at(i), conn_socket));
 
-                    clients.push_back(Client(getServerByName(buffer, servers.at(i)), conn_socket));
-                    clients.back().setRequest(std::string(buffer));
-
+                    struct pollfd pollstruct;
+                    pollstruct.fd = conn_socket;
+                    pollstruct.events = POLLIN | POLLOUT;
+                    pollstruct.revents = 0;
+                    this->pollfds.push_back(pollstruct);
                 } else {
-                    if (recv(events[i].data.fd, buffer, 1023, 0) > 0) {
-                        clients.at(i - reserved_sockets).setRequest(std::string(buffer));
+                    if (recv(pollfds.at(i).fd, buffer, 1023, 0) > 0) {
+                        clients.at(clientFdIdx).setRequest(std::string(buffer));
                     } else {
-                        close(events[i].data.fd);
-                        clients.erase(clients.begin() + i - reserved_sockets);
-                        this->open_fds -= 1;
+                        close(pollfds.at(i).fd);
+                        clients.erase(clients.begin() + clientFdIdx);
+                        this->pollfds.pop_back();
+                        popped = true;
                     }
                 }
-            }
+                if (this->pollfds.at(i).fd < servers.at(reserved_sockets - 1).getSocketFd())
+                    continue;
 
-            if (events[i].data.fd < servers.at(reserved_sockets - 1).getSocketFd())
-                continue;
-
-            if (events[i].events & EPOLLOUT) {
-                clients.at(i - reserved_sockets).response();
+                if (this->pollfds.at(i).revents & POLLOUT) {
+                    if (!clients.at(clientFdIdx).preparedToSend())
+                        continue;
+                    // REFACTOR THIS LINE
+                    clients.at(clientFdIdx).setTargetServer(getServerByName(clients.at(clientFdIdx).getRequest(), clients.at(clientFdIdx).getTargetServer()));
+                    clients.at(clientFdIdx).response();
+                }
             }
         }
-    }
-    for (size_t i = 0; i < open_fds; i++) {
-        close(events[i].data.fd);
-        shutdown(events[i].data.fd, SHUT_RDWR);
     }
 }
 
 WebServ::~WebServ(void) {
+    for (size_t i = 0; i < pollfds.size(); i += 1) {
+        close(pollfds[i].fd);
+        shutdown(pollfds[i].fd, SHUT_RDWR);
+    }
     messageLog("Server closed", GREEN, false);
 };
 
@@ -137,28 +143,28 @@ void WebServ::duplicateServers(void) {
     std::vector<Server>::iterator v_itr2;
 
     for (v_itr = this->servers.begin(); v_itr != this->servers.end(); v_itr++) {
-        if (v_itr->getServerName().length() == 0) continue;
+        if (v_itr->getServerName().length() == 0)
+            continue;
 
         for (v_itr2 = v_itr + 1; v_itr2 != this->servers.end(); v_itr2++) {
             if (v_itr->getServerName() == v_itr2->getServerName())
                 throw WebServ::ParserException("Duplicate servers");
 
             if (v_itr->getHost() == v_itr2->getHost() && v_itr->getPort() == v_itr2->getPort())
-                v_itr2->setSkipBind();
+                v_itr2->isDefaultServer = false;
         }
     }
 }
 
 size_t WebServ::getServerUsedSockets(void) {
     std::vector<Server>::iterator server;
-    size_t used_sockets = 0;
+    size_t nr_sockets = 0;
 
     for (server = this->servers.begin(); server != this->servers.end(); server++) {
-        if (!server->getSkipBind())
-            used_sockets += 1;
+        if (server->isDefaultServer)
+            nr_sockets += 1;
     }
-
-    return used_sockets;
+    return nr_sockets;
 }
 
 Server& WebServ::getServerByName(const std::string& buffer, Server& default_server) {
@@ -214,7 +220,6 @@ std::vector<Server> WebServ::parseConfigFile(const std::string& filename) {
             } else if (curly_brackets == 0) {
                 break;
             }
-
             token = lexer.nextToken();
         }
 
@@ -226,8 +231,8 @@ std::vector<Server> WebServ::parseConfigFile(const std::string& filename) {
     return servers;
 }
 
-locationPair WebServ::parseLocation(const std::map<std::string, std::string> &lexerParameters,
-                                    std::string &locationPath) {
+locationPair WebServ::parseLocation(const std::map<std::string, std::string>& lexerParameters,
+                                    std::string& locationPath) {
     location_t locationStruct;
     bzero(&locationStruct, sizeof(location_t));
 
@@ -254,7 +259,7 @@ locationPair WebServ::parseLocation(const std::map<std::string, std::string> &le
     return std::make_pair<std::string, location_t>(locationPath, locationStruct);
 }
 
-void WebServ::readLocationBlock(Lexer &lexer, Token &token) {
+void WebServ::readLocationBlock(Lexer& lexer, Token& token) {
     token = lexer.nextToken();
     while (token.type != RIGHT_CURLY_BRACKET) {
         token = lexer.nextToken();
