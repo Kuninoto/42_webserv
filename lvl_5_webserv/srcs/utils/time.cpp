@@ -1,21 +1,20 @@
-#include <ctime>
 #include <sys/stat.h>
-#include <string>
+
+#include <ctime>
 #include <iostream>
+#include <string>
 
-const std::string getTimeStamp(void)
-{
-	time_t now = time(0);
-	struct tm* tm_time = localtime(&now);
-	char buffer[80];
+const std::string getTimeStamp(void) {
+    time_t now = time(0);
+    struct tm* tm_time = localtime(&now);
+    char buffer[80];
 
-	strftime(buffer, 80, "%a, %d %b %Y %H:%M:%S GMT", tm_time);
+    strftime(buffer, 80, "%a, %d %b %Y %H:%M:%S GMT", tm_time);
 
-	return std::string(buffer);
+    return std::string(buffer);
 }
 
-const std::string getTime(void)
-{
+const std::string getTime(void) {
     time_t now = time(0);
     struct tm* tm_time = localtime(&now);
     char buffer[9];

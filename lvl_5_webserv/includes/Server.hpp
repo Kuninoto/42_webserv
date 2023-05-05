@@ -39,7 +39,7 @@ class Server {
         std::string getErrorResponse(void){ return this->error_response; };
         size_t getMaxBodySize(void) const { return this->clientMaxBodySize; };
         bool getSkipBind(void) { return this->skip_bind; };
-		int getSocketFd(void) const { return this->socket_fd; };
+		int getSocketFd(void) const { return this->socketFd; };
         void addLocation(std::pair<std::string, location_t> locationPair);
 		void createSocket(void);
 
@@ -64,7 +64,7 @@ class Server {
 
         std::string error_response;
 
-		int	socket_fd;
+		int	socketFd;
 
         void createErrorResponse();
 };

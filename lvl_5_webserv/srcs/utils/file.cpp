@@ -1,37 +1,34 @@
-#include <string>
-#include <map>
-#include <fstream>
-#include <iostream>
-#include <sstream>
 #include <dirent.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
+#include <fstream>
+#include <iostream>
+#include <map>
+#include <sstream>
+#include <string>
+
 #include "utils.hpp"
 
-bool isRegularFile(const char *path)
-{
-	struct stat st;
+bool isRegularFile(const char* path) {
+    struct stat st;
 
-	if (stat(path, &st) == 0
-    && S_ISREG(st.st_mode)) {
-		return true;
-	}
-	return false;
+    if (stat(path, &st) == 0 && S_ISREG(st.st_mode)) {
+        return true;
+    }
+    return false;
 }
 
+bool isDirectory(const char* path) {
+    struct stat st;
 
-bool isDirectory(const char *path)
-{
-	struct stat st;
-
-    if (stat(path,&st) != 0) {
+    if (stat(path, &st) != 0) {
         return false;
     }
-	return st.st_mode & S_IFDIR;
+    return st.st_mode & S_IFDIR;
 }
 
-std::string getFileType(const std::string& file)
-{
+std::string getFileType(const std::string& file) {
     static std::map<std::string, std::string> types;
 
     types["jpg"] = "image/jpg";
@@ -46,29 +43,33 @@ std::string getFileType(const std::string& file)
 }
 
 std::string getResponseBoilerPlate(const std::string& code, const std::string& title, const std::string& body) {
-    std::string html = 
+    std::string html =
         "<!DOCTYPE html>\n"
         "<html lang=\"en\">\n"
         "<head>\n"
         "    <meta charset=\"UTF-8\">\n"
         "    <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n"
         "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n"
-        "    <title>" + title + "</title>\n"
+        "    <title>" +
+        title +
+        "</title>\n"
         "</head>\n"
-        "<body>\n" + body + "</body>\n"
+        "<body>\n" +
+        body +
+        "</body>\n"
         "</html>\n";
 
-    std::string response = 
-        "HTTP/1.1 " + code + "\n"
+    std::string response =
+        "HTTP/1.1 " + code +
+        "\n"
         "Content-Type: text/html\n"
-        "Content-Length: " + ft_ntos(html.size()) + "\n\n"
-            + html;
+        "Content-Length: " +
+        ft_ntos(html.size()) + "\n\n" + html;
 
     return response;
 }
 
-std::string getFileSize(const std::string& file)
-{
+std::string getFileSize(const std::string& file) {
     std::streampos begin, end;
     std::stringstream stream;
     std::string size;
@@ -86,12 +87,14 @@ std::string getFileSize(const std::string& file)
     return size;
 }
 
-std::string getOkHeader(const std::string& file)
-{
-    std::string header = 
+std::string getOkHeader(const std::string& file) {
+    std::string header =
         "HTTP/1.1 200 OK\n"
-        "Content-Type: " + getFileType(file) + "; charset=UTC-8\n"
-        "Content-Length: " + getFileSize(file) +"\n\n";
+        "Content-Type: " +
+        getFileType(file) +
+        "; charset=UTC-8\n"
+        "Content-Length: " +
+        getFileSize(file) + "\n\n";
 
     return header;
 }
