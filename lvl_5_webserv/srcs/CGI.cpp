@@ -1,7 +1,4 @@
 #include "CGI.hpp"
-#include <iostream>
-#include <sstream>
-#include <unistd.h>
 
 using std::cout;
 using std::endl;
@@ -21,8 +18,7 @@ CGI::CGI()
 }
 
 CGI::~CGI(void) {
-	// if (args[0])
-	// 	delete args;
+	return ;
 }
 
 /**

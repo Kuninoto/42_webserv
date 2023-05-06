@@ -71,6 +71,8 @@ void Client::parseRequest(void) {
 	// If the method of the request is POST, parse the request content (if any)
 	if (this->method == "POST")
 		handlePostRequest();
+	if (this->method == "DELETE")
+		handleDeleteRequest();
 }
 
 void Client::handlePostRequest() {
@@ -91,6 +93,28 @@ void Client::handlePostRequest() {
 	}
 }
 
+void Client::handleDeleteRequest() {
+	std::string filename = server.getRoot() + components.at(1);
+	std::cout << "componente: " << components.at(1) << std::endl;
+	// Check if file exists
+	std::ifstream file(filename.c_str());
+	if (!file.good())
+	{
+		// File does not exist, return 404 Not Found response
+		std::cout << "Status: 404 Not Found\r\n\r\n";
+		std::cout << "File not found\r\n";
+	}
+	else
+	{
+		// File exists, delete it
+		file.close();
+		std::remove(filename.c_str());
+
+		// Return 200 OK response
+		std::cout << "Status: 200 OK\r\n\r\n";
+		std::cout << "File deleted\r\n";
+	}
+}
 
 void Client::createEnvVars() {
 	setenv("REQUEST_METHOD", method.c_str(), 1);
