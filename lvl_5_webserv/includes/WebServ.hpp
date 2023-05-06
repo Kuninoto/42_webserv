@@ -46,6 +46,8 @@ class WebServ {
     size_t getServerUsedSockets(void);
 
     Server& getServerByName(const std::string& buffer, Server& default_server);
+    void acceptClientConnection(int idx);
+    void closeClientConnection(int idx, int clientFdIdx);
     bool isFdAServer(int fd);
 
     std::map<std::string, std::string> params;

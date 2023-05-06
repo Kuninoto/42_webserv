@@ -75,6 +75,28 @@ void WebServ::bootServers(void) {
     }
 }
 
+void WebServ::acceptClientConnection(int idx) {
+    int conn_socket = accept(servers.at(idx).getSocketFd(), NULL, NULL);
+    if (conn_socket == -1)
+        throw std::runtime_error(ACCEPT_FAIL);
+
+    fcntl(conn_socket, F_SETFL, O_NONBLOCK);
+
+    clients.push_back(Client(servers.at(idx), conn_socket));
+
+    struct pollfd pollstruct;
+    pollstruct.fd = conn_socket;
+    pollstruct.events = POLLIN | POLLOUT;
+    pollstruct.revents = 0;
+    this->pollfds.push_back(pollstruct);
+}
+
+void WebServ::closeClientConnection(int idx, int clientFdIdx) {
+    close(pollfds.at(idx).fd);
+    pollfds.erase(pollfds.begin() + idx);
+    clients.erase(clients.begin() + clientFdIdx);
+}
+
 void WebServ::runServers(void) {
     while (!g_stopServer) {
         if (poll(this->pollfds.data(), this->pollfds.size(), 200) == -1 && !g_stopServer)
@@ -86,43 +108,29 @@ void WebServ::runServers(void) {
                 char buffer[1024] = {0};
 
                 if (isFdAServer(this->pollfds.at(i).fd)) {
-                    int conn_socket = accept(servers.at(i).getSocketFd(), NULL, NULL);
-                    if (conn_socket == -1)
-                        throw std::runtime_error(ACCEPT_FAIL);
-
-                    fcntl(conn_socket, F_SETFL, O_NONBLOCK);
-
-                    clients.push_back(Client(servers.at(i), conn_socket));
-
-                    struct pollfd pollstruct;
-                    pollstruct.fd = conn_socket;
-                    pollstruct.events = POLLIN | POLLOUT;
-                    pollstruct.revents = 0;
-                    this->pollfds.push_back(pollstruct);
+                    acceptClientConnection(i);
                 } else {
                     if (recv(pollfds.at(i).fd, buffer, 1023, 0) > 0) {
                         clients.at(clientFdIdx).setRequest(std::string(buffer));
                     } else {
-                        close(pollfds.at(i).fd);
-                        pollfds.erase(pollfds.begin() + i);
-                        clients.erase(clients.begin() + clientFdIdx);
+                        closeClientConnection(i, clientFdIdx);
                         continue;
                     }
                 }
             }
             if (pollfds.at(i).revents & POLLERR) {
                 messageLog("POLLERR", RED, true);
-                close(pollfds.at(i).fd);
-                pollfds.erase(pollfds.begin() + i);
-                clients.erase(clients.begin() + clientFdIdx);
+                closeClientConnection(i, clientFdIdx);
                 continue;
             }
             if (pollfds.at(i).revents & POLLHUP) {
                 messageLog("POLLHUP", RED, true);
+                closeClientConnection(i, clientFdIdx);
                 continue;
             }
             if (pollfds.at(i).revents & POLLNVAL) {
                 messageLog("POLLNVAL", RED, true);
+                closeClientConnection(i, clientFdIdx);
                 continue;
             }
 

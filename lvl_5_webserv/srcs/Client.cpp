@@ -98,6 +98,7 @@ void Client::sendResponse(std::string uri) {
 
     write(this->fd, response.c_str(), response.length());
     request.clear();
+    std::cout << "-> 200 OK" << std::endl;
 }
 
 void Client::sendErrorCode(std::string code) {
@@ -188,5 +189,6 @@ void Client::response(void) {
         this->resolveResponse(root, uri, 0);
     } catch (const std::exception& e) {
         this->sendErrorCode(e.what());
+        std::cout << "-> " << e.what() << std::endl;
     }
 }
