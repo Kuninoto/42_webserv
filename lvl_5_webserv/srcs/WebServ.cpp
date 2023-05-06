@@ -76,19 +76,13 @@ void WebServ::bootServers(void) {
 }
 
 void WebServ::runServers(void) {
-    bool popped = false;
-
     while (!g_stopServer) {
         if (poll(this->pollfds.data(), this->pollfds.size(), 200) == -1 && !g_stopServer)
             throw std::runtime_error(POLL_FAIL);
         for (size_t i = 0; i < this->pollfds.size(); i += 1) {
-            if (popped == true)
-                continue;
-            // if (pollfds.at(i).fd < servers.at(0).getSocketFd())
-            //     continue;
+            int clientFdIdx = i - reserved_sockets;
 
             if (pollfds.at(i).revents & POLLIN) {
-                int clientFdIdx = i - reserved_sockets;
                 char buffer[1024] = {0};
 
                 if (isFdAServer(this->pollfds.at(i).fd)) {
@@ -110,21 +104,37 @@ void WebServ::runServers(void) {
                         clients.at(clientFdIdx).setRequest(std::string(buffer));
                     } else {
                         close(pollfds.at(i).fd);
+                        pollfds.erase(pollfds.begin() + i);
                         clients.erase(clients.begin() + clientFdIdx);
-                        this->pollfds.pop_back();
-                        popped = true;
+                        continue;
                     }
                 }
-                if (this->pollfds.at(i).fd < servers.at(reserved_sockets - 1).getSocketFd())
-                    continue;
+            }
+            if (pollfds.at(i).revents & POLLERR) {
+                messageLog("POLLERR", RED, true);
+                close(pollfds.at(i).fd);
+                pollfds.erase(pollfds.begin() + i);
+                clients.erase(clients.begin() + clientFdIdx);
+                continue;
+            }
+            if (pollfds.at(i).revents & POLLHUP) {
+                messageLog("POLLHUP", RED, true);
+                continue;
+            }
+            if (pollfds.at(i).revents & POLLNVAL) {
+                messageLog("POLLNVAL", RED, true);
+                continue;
+            }
 
-                if (this->pollfds.at(i).revents & POLLOUT) {
-                    if (!clients.at(clientFdIdx).preparedToSend())
-                        continue;
-                    // REFACTOR THIS LINE
-                    clients.at(clientFdIdx).setTargetServer(getServerByName(clients.at(clientFdIdx).getRequest(), clients.at(clientFdIdx).getTargetServer()));
-                    clients.at(clientFdIdx).response();
-                }
+            if (this->pollfds.at(i).fd < servers.at(reserved_sockets - 1).getSocketFd())
+                continue;
+
+            if (this->pollfds.at(i).revents & POLLOUT) {
+                if (!clients.at(clientFdIdx).preparedToSend())
+                    continue;
+                // REFACTOR THIS LINE
+                clients.at(clientFdIdx).setTargetServer(getServerByName(clients.at(clientFdIdx).getRequest(), clients.at(clientFdIdx).getTargetServer()));
+                clients.at(clientFdIdx).response();
             }
         }
     }
