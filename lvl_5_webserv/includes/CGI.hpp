@@ -12,6 +12,8 @@
 #include <sys/wait.h>
 #include <algorithm>
 #include <fcntl.h>
+#include <iostream>
+#include <sstream>
 
 #include "libwebserv.hpp"
 

@@ -86,6 +86,7 @@ class Client {
 	void sendErrorCode(std::string code);
 	void createEnvVars();
 	void handlePostRequest();
+	void handleDeleteRequest();
 
 	// std::string resolvePathAndLocation(void);
 };
