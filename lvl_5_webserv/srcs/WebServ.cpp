@@ -1,5 +1,6 @@
 #include "WebServ.hpp"
 
+#include <errno.h>
 #include <fcntl.h>
 #include <memory.h>
 #include <netdb.h>
@@ -55,16 +56,16 @@ void WebServ::bootServers(void) {
         server->createSocket();
 
         if (setsockopt(server->getSocketFd(), SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(int)) < 0)
-            throw std::runtime_error(SETSOCKETOPT_FAIL);
+            throw std::runtime_error("fatal: setsocketopt(): " + std::string(strerror(errno)));
 
         if (getaddrinfo(server->getHost().c_str(), server->getPort().c_str(), &hints, &result) != 0)
-            throw std::runtime_error(GETADDRINFO_FAIL);
+            throw std::runtime_error("fatal: getaddrinfo(): " + std::string(strerror(errno)));
 
         if (bind(server->getSocketFd(), result->ai_addr, result->ai_addrlen) == -1)
-            throw std::runtime_error(BIND_FAIL);
+            throw std::runtime_error("fatal: bind(): \"" + std::string(strerror(errno)));
 
-        if (listen(server->getSocketFd(), NR_PENDING_CONNECTIONS) == -1)
-            throw std::runtime_error(LISTEN_FAIL);
+        if (listen(server->getSocketFd(), MAX_PENDING_CONNECTIONS) == -1)
+            throw std::runtime_error("fatal: listen(): \"" + std::string(strerror(errno)));
 
         freeaddrinfo(result);
         pollstruct.fd = server->getSocketFd();

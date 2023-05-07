@@ -231,16 +231,16 @@ void Client::response(void) {
     try {
         this->parseRequest();
 
-        // Must change the way responses are made
-        // each method must take its own path after location resolving
+        // MUST CHANGE
 
-        // if (this->method == "POST") {
-        //     // printMap(headers);
-        //     createEnvVars();
-        //     handlePostRequest();
-        // }
-        // if (this->method == "DELETE")
-        //     handleDeleteRequest();
+        if (this->method == "POST") {
+            // printMap(headers);
+            createEnvVars();
+            handlePostRequest();
+        }
+        if (this->method == "DELETE") {
+            handleDeleteRequest();
+        }
 
         std::string root = this->server.getRoot();
         std::string uri = this->uri_target;
