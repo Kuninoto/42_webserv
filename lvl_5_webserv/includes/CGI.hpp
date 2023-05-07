@@ -11,6 +11,9 @@
 #include <dirent.h>
 #include <sys/wait.h>
 #include <algorithm>
+#include <fcntl.h>
+#include <iostream>
+#include <sstream>
 
 #include "libwebserv.hpp"
 
@@ -18,39 +21,45 @@ class Lexer;
 
 class CGI {
 	public:
-		CGI(std::string request);
-		~CGI(void) {};
+		CGI(void);
+		~CGI(void);
 
 		std::string response;
 
 	private:
-		CGI(void);
 		
-		bool runCGI(const std::string& request);
+		bool runCGI();
 		bool validPath(void);
 		bool validExtension(void);
 		void runScript(void);
-		std::string getExtension(void);
-		void parseFileFromRequest(std::string request);
-		char **chooseExtension(void);
+		bool getExtension(void);
+		void creatArgs(void);
+		bool retError(std::string message);
+		void parseQueryString();
+		bool getEnvVars();
+		bool checkVars(std::string method);
+		bool deleteFile();
 
+		char **args;
+		std::vector<std::string> params;
+		std::map<std::string, std::string> envVars;
 		std::string method;
-		std::string filename;
 		std::string filePath;
 		std::string extension;
 		std::string runner;
 		std::string error;
 };
 
-	class CGIException : public std::exception {
-		public:
-			CGIException(const std::string& message) : message(message) {};
+class CGIException : public std::exception {
+	public:
+		CGIException(const std::string error) throw() {message = new std::string(error);};
+		virtual ~CGIException() throw() {delete message;}
 
-			virtual const char* what() const throw() {
-				return message.c_str();
-			};
-		private:
-			const std::string& message;
-	};
+		virtual const char* what() const throw() {
+			return message->c_str();
+		};
+	private:
+		const std::string *message;
+};
 
 #endif // CGI_HPP
