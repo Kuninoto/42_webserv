@@ -5,6 +5,8 @@
 #include <map>
 #include <string>
 
+#define OPEN_FILE_ERR "failed to open config file"
+
 enum TokenType {
     KEYWORD,
     LEFT_CURLY_BRACKET,

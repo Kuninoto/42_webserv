@@ -12,7 +12,7 @@ bool g_stopServer = false;
 
 static void closeServer(int signum) {
     (void)signum;
-    messageLog("Closing server", YELLOW, false);
+    logMessage("Closing WebServer");
     g_stopServer = true;
 }
 
@@ -71,7 +71,7 @@ void WebServ::bootServers(void) {
         pollstruct.events = POLLIN;
         pollstruct.revents = 0;
         pollfds.push_back(pollstruct);
-        messageLog(server->getHost() + ":" + server->getPort(), BLUE, false);
+        logMessage(server->getHost() + ":" + server->getPort());
     }
 }
 
@@ -119,17 +119,17 @@ void WebServ::runServers(void) {
                 }
             }
             if (pollfds.at(i).revents & POLLERR) {
-                messageLog("POLLERR", RED, true);
+                logMessage(RED "POLLERR");
                 closeClientConnection(i, clientFdIdx);
                 continue;
             }
             if (pollfds.at(i).revents & POLLHUP) {
-                messageLog("POLLHUP", RED, true);
+                logMessage(RED "POLLHUP");
                 closeClientConnection(i, clientFdIdx);
                 continue;
             }
             if (pollfds.at(i).revents & POLLNVAL) {
-                messageLog("POLLNVAL", RED, true);
+                logMessage(RED "POLLNVAL");
                 closeClientConnection(i, clientFdIdx);
                 continue;
             }
@@ -150,10 +150,10 @@ void WebServ::runServers(void) {
 
 WebServ::~WebServ(void) {
     for (size_t i = 0; i < pollfds.size(); i += 1) {
-        close(pollfds[i].fd);
         shutdown(pollfds[i].fd, SHUT_RDWR);
+        close(pollfds[i].fd);
     }
-    messageLog("Server closed", GREEN, false);
+    logMessage("WebServer closed");
 };
 
 void WebServ::duplicateServers(void) {

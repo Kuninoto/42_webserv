@@ -40,10 +40,10 @@ bool CGI::runCGI()
 		return false;
 
 	if (!this->validExtension())
-		return(this->retError("Invalid file type"));
+		return this->retError("Invalid file type");
 
 	if (!this->validPath())
-		return(this->retError("Invalid file"));
+		return this->retError("Invalid file");
 
 	try {
 		this->runScript();
@@ -76,7 +76,7 @@ bool CGI::getEnvVars()
 	if (!envVars["QUERY_STRING"].empty())
 		parseQueryString();
 	if (!getExtension())
-		return(retError("The file has no extension"));
+		return retError("The file has no extension");
 	filePath = envVars["PATH_INFO"] + ("/" + envVars["SCRIPT_NAME"]);
 	return true;
 }

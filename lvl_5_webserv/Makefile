@@ -1,5 +1,5 @@
 CC = c++
-CFLAGS = -Wall -Wextra -Werror -std=c++98 -g #-fsanitize=address #-O3
+CFLAGS = -Wall -Wextra -Werror -std=c++98 # -Wno-unused-result -O3 # -g -fsanitize=address
 INCLUDE = -I./includes
 VPATH = srcs srcs/utils
 RM = rm -rf
