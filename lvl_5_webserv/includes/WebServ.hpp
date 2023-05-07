@@ -5,15 +5,9 @@
 
 #include "libwebserv.hpp"
 
-#define NR_PENDING_CONNECTIONS 10
-#define MAX_EVENTS 10
-
-#define SETSOCKETOPT_FAIL "fatal: setsocketopt() failed"
-#define GETADDRINFO_FAIL "fatal: getaddrinfo() failed"
-#define BIND_FAIL "fatal: bind() failed"
+#define MAX_PENDING_CONNECTIONS 10
 #define POLL_FAIL "fatal: poll() failed"
 #define ACCEPT_FAIL "fatal: accept() failed"
-#define LISTEN_FAIL "fatal: listen() failed"
 
 class WebServ {
    public:
