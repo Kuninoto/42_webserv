@@ -8,19 +8,22 @@
 using std::cout;
 using std::endl;
 
-CGI::CGI(std::string request) {
-    if (!runCGI(request))
-        throw(CGIException(error));
+CGI::CGI()
+{
+	if (!runCGI())
+		throw (CGIException(error));
 
-    //! Below is for debbuging, delete when done
-    cout << "Method: " << method << endl;
-    cout << "Filename: " << filename << endl;
-    cout << "Ext: " << extension << endl;
-    cout << "File path: " << filePath << endl;
-    cout << "File is valid: "
-         << "yes" << endl;
-    cout << "Extension is valid: "
-         << "yes" << endl;
+	//! Below is for debbuging, delete when done
+	cout << "Method: " << envVars["REQUEST_METHOD"] << endl;
+	cout << "Filename: " << envVars["SCRIPT_NAME"] << endl;
+	cout << "Ext: " << extension << endl;
+	cout << "File path: " << filePath << endl;
+	cout << "File is valid: " << "yes" << endl;
+	cout << "Extension is valid: " << "yes" << endl;
+}
+
+CGI::~CGI(void) {
+	return ;
 }
 
 /**
@@ -30,26 +33,82 @@ CGI::CGI(std::string request) {
  * @return true if operation was a success
  * @return false if something went wrong
  */
-bool CGI::runCGI(const std::string &request) {
-    this->parseFileFromRequest(request);
-    this->filePath = getenv("PATH_INFO") + ("/" + filename);
-    this->extension = this->getExtension();
-    if (!this->validExtension()) {
-        this->error = "Invalid file type";
-        return false;
-    }
-    if (!this->validPath()) {
-        this->error = "Invalid file";
-        return false;
-    }
+bool CGI::runCGI()
+{
+	// Get environment variables
+	if (!this->getEnvVars())
+		return false;
 
-    try {
-        this->runScript();
-    } catch (const std::exception &e) {
-        this->error = e.what();
-        return false;
-    }
-    return true;
+	if (!this->validExtension())
+		return(this->retError("Invalid file type"));
+
+	if (!this->validPath())
+		return(this->retError("Invalid file"));
+
+	try {
+		this->runScript();
+	}
+	catch (const std::exception& e) {
+		this->error = e.what();
+		return false;
+	}
+	return true;
+}
+
+/**
+ * @brief gets the environment variables and checks if all obligatory ones are present
+ *
+ * @return true if everything is good
+ * @return false if an obligatory variable is missing
+ */
+bool CGI::getEnvVars()
+{
+	envVars["REQUEST_METHOD"] = getenv("REQUEST_METHOD");
+	envVars["PATH_INFO"] = getenv("PATH_INFO");
+	envVars["SCRIPT_NAME"] = getenv("SCRIPT_NAME");
+	envVars["QUERY_STRING"] = getenv("QUERY_STRING");
+	envVars["CONTENT_LENGTH"] = getenv("CONTENT_LENGTH");
+	envVars["CONTENT_TYPE"] = getenv("CONTENT_TYPE");
+
+	if (!checkVars(envVars["REQUEST_METHOD"]))
+		return false;
+
+	if (!envVars["QUERY_STRING"].empty())
+		parseQueryString();
+	if (!getExtension())
+		return(retError("The file has no extension"));
+	filePath = envVars["PATH_INFO"] + ("/" + envVars["SCRIPT_NAME"]);
+	return true;
+}
+
+/**
+ * @brief checks if all variables are present for the request type
+ *
+ * @param method either GET, POST or DELETE
+ * @return true
+ * @return false
+ */
+bool CGI::checkVars(std::string method)
+{
+	if (envVars["REQUEST_METHOD"].empty())
+		return retError("REQUEST_METHOD variable missing");
+	if (envVars["REQUEST_METHOD"] != "GET" && envVars["REQUEST_METHOD"] != "POST")
+		return retError("Bad variable REQUEST_METHOD");
+	if (envVars["PATH_INFO"].empty())
+		return retError("PATH_INFO variable missing");
+
+	if (envVars["SCRIPT_NAME"].empty())
+		return retError("SCRIPT_NAME variable missing");
+
+	if (method == "POST") {
+		if (envVars["QUERY_STRING"].empty())
+			return retError("QUERY_STRING variable missing");
+		if (envVars["CONTENT_LENGTH"].empty())
+			return retError("CONTENT_LENGTH variable missing");
+		if (envVars["CONTENT_TYPE"].empty())
+			return retError("CONTENT_TYPE variable missing");
+	}
+	return true;
 }
 
 /**
@@ -77,101 +136,163 @@ bool CGI::validExtension(void) {
 
 /**
  * @brief Returns the extension of the file stored in "filename" variable
- *  
+ *
+ * @return std::string returns a string with the extension
  */
-std::string	CGI::getExtension(void)
+bool	CGI::getExtension(void)
 {
-	std::string ext;
-
-	size_t pos = this->filename.find_last_of('.');
+	size_t pos = envVars["SCRIPT_NAME"].find_last_of('.');
 	if (pos == std::string::npos)
-		throw CGIException("invalid filaname, no extension");
-	ext = this->filename.substr(pos + 1);
-	return ext;
+		return false;
+	extension = envVars["SCRIPT_NAME"].substr(pos + 1);
+	return true;
 }
 
 /**
- * @brief Parses the HTTP request and stores information into variables
+ * @brief run the script and save the output into file
  *
- * @param request is the HTTP request header
  */
-void CGI::parseFileFromRequest(std::string request) {
-    std::stringstream ss(request);
+void CGI::runScript(void)
+{
+	pid_t pid;
+	if(!deleteFile())
+		throw(CGIException("File not deleted"));
 
-    // Read the HTTP request and save the first and second word
-    getline(ss, method, ' ');
-    getline(ss, filename, ' ');
+	int output_fd = open(".output", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+	if (output_fd == -1)
+		throw (CGIException("open() failed"));
+
+	pid = fork();
+	if (pid == -1)
+		throw (CGIException("fork() failed"));
+
+	// child
+	if (pid == 0)
+	{
+		dup2(output_fd, STDOUT_FILENO);
+		close(output_fd);
+		creatArgs();
+		execve(runner.c_str(), args, NULL);
+		// only gets here if execve fails
+		throw (CGIException("execve() failed"));
+	}
+	else
+	{
+		int status;
+		while (waitpid(pid, &status, 0) == -1);
+
+		close(output_fd);
+	}
+}
+
+bool CGI::deleteFile() {
+	if (std::FILE* file = std::fopen(".output", "r")) {
+		std::fclose(file);
+		// delete file
+		if (std::remove(".output") != 0)
+			return false;
+		cout << "file deleted" << endl;
+	}
+	return true;
 }
 
 /**
- * @brief run the script and save the output into response
+ * @brief chooses the right way to run the script
  *
  */
-void CGI::runScript(void) {
-    int pipefd[2];
-    char buffer[1024];
-    pid_t pid;
+void	CGI::creatArgs(void)
+{
+	int i = 2;
 
-    if (pipe(pipefd) == -1)
-        throw(CGIException("pipe() failed"));
+	if (extension == "py") {
+		runner = "/usr/bin/python3";
+		args = new char*[3 + params.size()];
+		args[0] = (char *)"python3";
+		args[1] = (char *)filePath.c_str();
+		for (size_t param = 0; param < params.size(); param++) {
+			args[i] = (char *)params[param].c_str();
+			i++;
+		}
+		args[i] = NULL;
+	}
 
-    pid = fork();
-    if (pid == -1)
-        throw(CGIException("fork() failed"));
-    // child
-    if (pid == 0) {
-        close(pipefd[0]);
-        dup2(pipefd[1], STDOUT_FILENO);
-        close(pipefd[1]);
-        char **args = chooseExtension();
-        execve(runner.c_str(), args, NULL);
-        // only gets here if execve fails
-        delete args;
-        exit(127);
-    } else {
-        close(pipefd[1]);
-        int status;
-        while (waitpid(pid, &status, 0) == -1)
-            ;
-        while (read(pipefd[0], &buffer, 1023) != 0) {
-            response += buffer;
-            memset(&buffer, '\0', 1024);
-        }
-        close(pipefd[0]);
-    }
+	if (extension == "php") {
+		runner = "/usr/bin/php";
+		args = new char*[3 + params.size()];
+		args[0] = (char *)"php";
+		args[1] = (char *)filePath.c_str();
+		for (size_t param = 0; param < params.size(); param++) {
+			args[i] = (char *)params[param].c_str();
+			i++;
+		}
+		args[i] = NULL;
+	}
+
+	if (extension == "sh") {
+		runner = "/usr/bin/bash";
+		args = new char*[3 + params.size()];
+		args[0] = (char *)"bash";
+		args[1] = (char *)filePath.c_str();
+		for (size_t param = 0; param < params.size(); param++) {
+			args[i] = (char *)params[param].c_str();
+			i++;
+		}
+		args[i] = NULL;
+	}
 }
 
 /**
- * @brief Chooses the right way to run the script
+ * @brief sets "error" to the error that should be thrown and returns false
  *
- * @return char* are the arguments for execve
+ * @param error error message to be thrown
+ * @return always false
  */
-char **CGI::chooseExtension(void) {
-    char **args;
+bool	CGI::retError(std::string message)
+{
+	this->error = message;
+	return false;
+}
 
-    if (extension == "py") {
-        runner = "/usr/bin/python3";
-        args = new char *[3];
-        args[0] = (char *)"python3";
-        args[1] = (char *)filePath.c_str();
-        args[2] = NULL;
-    }
+/**
+ * @brief parses the query string so that it can be passed as arguments to the script
+ *
+ */
+void CGI::parseQueryString()
+{
+	std::string value, param;
+	size_t pos, equal;
+	std::string qs(envVars["QUERY_STRING"]);
 
-    if (extension == "php") {
-        runner = "/usr/bin/php";
-        args = new char *[3];
-        args[0] = (char *)"php";
-        args[1] = (char *)filePath.c_str();
-        args[2] = NULL;
-    }
+	// cout << "Query string = " << qs << endl;
 
-    if (extension == "sh") {
-        runner = "/usr/bin/bash";
-        args = new char *[3];
-        args[0] = (char *)"bash";
-        args[1] = (char *)filePath.c_str();
-        args[2] = NULL;
-    }
+	while (!qs.empty()) {
+		pos = qs.find("&");
 
-    return args;
+		if (pos != std::string::npos) {
+			param = qs.substr(0, pos);
+		} else {
+			param = qs;
+			qs.clear();
+		}
+
+		equal = param.find("=");
+		if (equal != std::string::npos) {
+			value = param.substr(equal + 1, pos);
+			qs.erase(0, pos + 1);
+		} else {
+			value = param;
+		}
+
+		for (size_t i = 0; i < value.size(); i++) {
+			if (value[i] == '+')
+				value[i] = ' ';
+		}
+
+		params.push_back(value);
+	}
+
+	// Print the parameters and their values
+	// for (size_t i = 0; i < params.size(); i++) {
+	// 	cout << "vector at " << i << " = \"" << params.at(i) << "\"" << endl;
+	// }
 }
