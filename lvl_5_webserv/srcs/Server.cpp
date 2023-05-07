@@ -48,7 +48,7 @@ std::string Server::createErrorResponse(void)
     std::string path_to_error_page = this->root + this->errorPagePath;
     std::ifstream error_page_file(path_to_error_page.c_str(), std::ios::binary | std::ios::in);
 
-    std::string error_response = "HTTP/1.1 400 Not Found\n"
+    std::string error_response = "HTTP/1.1 404 Not Found\n"
                                  "Content-Type: " + getFileType(path_to_error_page) + ";"
                                  "charset=UTC-8\nContent-Length: " + getFileSize(path_to_error_page) + "\n\n";
 

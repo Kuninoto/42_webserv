@@ -22,12 +22,19 @@ bool isValidKeyword(const std::string& value) {
 }
 
 Lexer::Lexer(const std::string& filename) {
-    file.open(filename.c_str());
-    if (!file.is_open())
-        throw LexerException("Failed to open config file");
+    if (filename.find_last_of(".") == std::string::npos)
+        throw LexerException("no extension");
+
+    std::string extension = filename.substr(filename.find_last_of("."));
+    if (extension != ".conf")
+        throw LexerException("unknown extension \"" + extension + "\"");
+
+    this->file.open(filename.c_str());
+    if (!this->file.is_open())
+        throw LexerException(OPEN_FILE_ERR);
     this->line_nr = 1;
     this->has_server = false;
-    this->current_char = file.get();
+    this->current_char = this->file.get();
 }
 
 Token Lexer::nextToken(void) {
@@ -44,7 +51,7 @@ Token Lexer::nextToken(void) {
             this->consumeWhiteSpace();
             continue;
         }
-        // COMMENT
+        // Skip comments
         if (current_char == '#') {
             this->consumeComment();
             continue;

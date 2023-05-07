@@ -1,17 +1,15 @@
+FIX LOCATIONS
+
 Upload files
-DELETE method (?)
+DELETE method: Make the response status accurate -> https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/DELETE
 Make the route able to accept uploaded files and configure where they should
 be saved
 Connection Timeout
-Refactor the server_name handling (Webserv.cpp)
-Consecutive Refreshes
 
 CGI (POST and GET)
 
-Tests using scripts and whatnot
-
 LEXER -------------------------
-check if at least one server exists ❌
+check if at least one server exists ✅
 check for empty arguments ✅
 check for multiple arguments (except allow_methods) ✅
 check for ';' ✅
@@ -25,3 +23,7 @@ After math --------------------
 Better the HTTP Response Header
 Better the HTML Response Pages
 Refactor
+
+TESTS:
+Siege ✅
+ubuntu_tester 

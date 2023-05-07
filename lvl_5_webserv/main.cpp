@@ -13,7 +13,7 @@ int main(int argc, char **argv)
 	try {
 		cout << getTimeStamp() << endl;
 		WebServ webserv(argv[1]);
-		messageLog("Booting servers...", RESET, false);
+		logMessage("Booting servers...");
 		webserv.bootServers();
 		webserv.runServers();
 		return EXIT_SUCCESS;
