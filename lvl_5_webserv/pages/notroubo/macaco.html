@@ -1,55 +1,38 @@
-<!-- <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body style="background: darkblue">
-
-    <span style="color:white"> 
-        Hello world!
-        <form method="DELETE" action="ola.txt">
-            <label for="name">Nome macaco: </label>
-            <input name="name" id="name" type="text">
-
-            <input name="files" id="files" type="file">
-
-            <input type="submit" value="Click here">
-        </form>
-    </span>
-
-</body>
-</html> -->
-
 <!DOCTYPE html>
 <html>
   <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <title>Delete Request Example</title>
   </head>
   <body>
-    <h1>Delete Request Example</h1>
-    <label for="filename">Enter the name of the file to delete:</label>
-    <input type="text" id="filename" name="filename">
+    <h1>DELETE Request</h1>
+    <label for="filename">File to DELETE:</label>
+    <input type="text" id="filename" name="filename" />
     <button onclick="sendDeleteRequest()">Delete File</button>
+
+    <h1>POST Request</h1>
+    <form method="POST" action="create_file.py">
+      <label for="name">Query to POST: </label>
+      <input name="text" id="name" type="text" />
+      <button>Send Query</button>
+    </form>
+
     <script>
       function sendDeleteRequest() {
-        const filename = document.getElementById('filename').value;
+        const filename = document.getElementById("filename").value;
         const url = `${filename}`;
         fetch(url, {
-          method: 'DELETE'
+          method: "DELETE",
         })
-        .then(response => {
-          if (!response.ok) {
-            throw new Error(`HTTP error ${response.status}`);
-          }
-          console.log(`File '${filename}' deleted successfully`);
-        })
-        .catch(error => {
-          console.error(`Error deleting file '${filename}':`, error);
-        });
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`HTTP error ${response.status}`);
+            }
+            console.log(`File '${filename}' deleted successfully`);
+          })
+          .catch((error) => {
+            console.error(`Error deleting file '${filename}':`, error);
+          });
       }
     </script>
   </body>

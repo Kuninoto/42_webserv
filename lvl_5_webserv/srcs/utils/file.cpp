@@ -31,15 +31,21 @@ bool isDirectory(const char* path) {
 std::string getFileType(const std::string& file) {
     static std::map<std::string, std::string> types;
 
-    types["jpg"] = "image/jpg";
-    types["png"] = "image/png";
+    types["txt"] = "text/plain";
     types["html"] = "text/html";
     types["css"] = "text/css";
-    types["js"] = "application/javascript";
 
-    if (file.find(".") == std::string::npos)
-        return "text/plain";
-    return types[file.substr(file.find_last_of(".") + 1)];
+    types["js"] = "application/javascript";
+    types["py"] = "application/python";
+
+    types["jpg"] = "image/jpg";
+    types["jpeg"] = "image/jpeg";
+    types["png"] = "image/png";
+    types["gif"] = "image/gif";
+
+    if (types.count(file.substr(file.find_last_of(".") + 1)) > 0)
+        return types[file.substr(file.find_last_of(".") + 1)];
+    return "text/plain";
 }
 
 std::string getResponseBoilerPlate(const std::string& code, const std::string& title, const std::string& body) {
@@ -50,16 +56,23 @@ std::string getResponseBoilerPlate(const std::string& code, const std::string& t
         "    <meta charset=\"UTF-8\">\n"
         "    <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n"
         "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n"
-        "    <title>" + title + "</title>\n"
+        "    <title>" +
+        title +
+        "</title>\n"
         "</head>\n"
-        "<body>\n" + body + "</body>\n"
+        "<body>\n" +
+        body +
+        "</body>\n"
         "</html>\n";
 
     std::string response =
-        "HTTP/1.1 " + code + "\n"
+        "HTTP/1.1 " + code +
+        "\n"
         "Content-Type: text/html\n"
-        "Content-Length: " + ft_ntos(html.size()) + "\n\n"
-        + html;
+        "Content-Length: " +
+        ft_ntos(html.size()) +
+        "Server: WebServ\n\n" +
+        html;
     return response;
 }
 
@@ -84,8 +97,14 @@ std::string getFileSize(const std::string& file) {
 std::string getOkHeader(const std::string& file) {
     std::string header =
         "HTTP/1.1 200 OK\n"
-        "Date: " + getTimeStamp() + "\n"
-        "Content-Type: " + getFileType(file) + "; charset=UTC-8\n"
-        "Content-Length: " + getFileSize(file) + "\n\n";
+        "Date: " +
+        getTimeStamp() +
+        "\n"
+        "Content-Type: " +
+        getFileType(file) +
+        "; charset=UTC-8\n"
+        "Content-Length: " +
+        getFileSize(file) +
+        "Server: WebServ\n\n";
     return header;
 }

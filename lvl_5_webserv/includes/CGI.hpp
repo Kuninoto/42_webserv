@@ -1,65 +1,63 @@
 #ifndef CGI_HPP
 #define CGI_HPP
 
-#include <sys/stat.h>
-#include <cstdlib>
-#include <stdint.h>
-#include <string>
-#include <unistd.h>
-#include <vector>
-#include <map>
 #include <dirent.h>
-#include <sys/wait.h>
-#include <algorithm>
 #include <fcntl.h>
+#include <stdint.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
+#include <algorithm>
+#include <cstdlib>
 #include <iostream>
+#include <map>
 #include <sstream>
+#include <string>
+#include <vector>
 
 #include "libwebserv.hpp"
 
 class Lexer;
 
 class CGI {
-	public:
-		CGI(void);
-		~CGI(void);
+   public:
+    CGI(void);
+    ~CGI(void);
 
-		std::string response;
+    std::string response;
 
-	private:
-		
-		bool runCGI();
-		bool validPath(void);
-		bool validExtension(void);
-		void runScript(void);
-		bool getExtension(void);
-		void creatArgs(void);
-		bool retError(std::string message);
-		void parseQueryString();
-		bool getEnvVars();
-		bool checkVars(std::string method);
-		bool deleteFile();
+   private:
+    void runCGI(void);
+    bool validPath(void);
+    void runScript(void);
+    void setExtension(void);
+    void createArgs(void);
+    void parseQueryString(void);
+    void getEnvVars(void);
+    void checkVars(std::string method);
 
-		char **args;
-		std::vector<std::string> params;
-		std::map<std::string, std::string> envVars;
-		std::string method;
-		std::string filePath;
-		std::string extension;
-		std::string runner;
-		std::string error;
+    char **args;
+    std::vector<std::string> params;
+    std::map<std::string, std::string> envVars;
+    std::string method;
+    std::string filePath;
+    std::string extension;
+    std::string runner;
+    std::string error;
 };
 
 class CGIException : public std::exception {
-	public:
-		CGIException(const std::string error) throw() {message = new std::string(error);};
-		virtual ~CGIException() throw() {delete message;}
+   public:
+    CGIException(const std::string error) throw() { message = new std::string(error); };
+    virtual ~CGIException() throw() { delete message; }
 
-		virtual const char* what() const throw() {
-			return message->c_str();
-		};
-	private:
-		const std::string *message;
+    virtual const char *what() const throw() {
+        return message->c_str();
+    };
+
+   private:
+    const std::string *message;
 };
 
-#endif // CGI_HPP
+#endif  // CGI_HPP

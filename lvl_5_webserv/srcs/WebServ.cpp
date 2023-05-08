@@ -62,10 +62,10 @@ void WebServ::bootServers(void) {
             throw std::runtime_error("fatal: getaddrinfo(): " + std::string(strerror(errno)));
 
         if (bind(server->getSocketFd(), result->ai_addr, result->ai_addrlen) == -1)
-            throw std::runtime_error("fatal: bind(): \"" + std::string(strerror(errno)));
+            throw std::runtime_error("fatal: bind(): " + std::string(strerror(errno)));
 
         if (listen(server->getSocketFd(), MAX_PENDING_CONNECTIONS) == -1)
-            throw std::runtime_error("fatal: listen(): \"" + std::string(strerror(errno)));
+            throw std::runtime_error("fatal: listen(): " + std::string(strerror(errno)));
 
         freeaddrinfo(result);
         pollstruct.fd = server->getSocketFd();
@@ -104,32 +104,37 @@ void WebServ::runServers(void) {
             throw std::runtime_error(POLL_FAIL);
         for (size_t i = 0; i < this->pollfds.size(); i += 1) {
             int clientFdIdx = i - reserved_sockets;
+            short revent = pollfds.at(i).revents;
 
-            if (pollfds.at(i).revents & POLLIN) {
+            if (revent & POLLIN) {
                 char buffer[1024] = {0};
 
                 if (isFdAServer(this->pollfds.at(i).fd)) {
                     acceptClientConnection(i);
-                } else {
-                    if (recv(pollfds.at(i).fd, buffer, 1023, 0) > 0) {
-                        clients.at(clientFdIdx).setRequest(std::string(buffer));
-                    } else {
-                        closeClientConnection(i, clientFdIdx);
-                        continue;
-                    }
+                    continue;
                 }
+
+                if (recv(pollfds.at(i).fd, buffer, 1023, 0) > 0) {
+                    clients.at(clientFdIdx).setRequest(std::string(buffer));
+                } else {
+                    closeClientConnection(i, clientFdIdx);
+                }
+                continue;
             }
-            if (pollfds.at(i).revents & POLLERR) {
+
+            if (revent & POLLERR) {
                 logMessage(RED "POLLERR");
                 closeClientConnection(i, clientFdIdx);
                 continue;
             }
-            if (pollfds.at(i).revents & POLLHUP) {
+
+            if (revent & POLLHUP) {
                 logMessage(RED "POLLHUP");
                 closeClientConnection(i, clientFdIdx);
                 continue;
             }
-            if (pollfds.at(i).revents & POLLNVAL) {
+
+            if (revent & POLLNVAL) {
                 logMessage(RED "POLLNVAL");
                 closeClientConnection(i, clientFdIdx);
                 continue;
@@ -138,7 +143,7 @@ void WebServ::runServers(void) {
             if (this->pollfds.at(i).fd < servers.at(reserved_sockets - 1).getSocketFd())
                 continue;
 
-            if (this->pollfds.at(i).revents & POLLOUT) {
+            if (revent & POLLOUT) {
                 if (!clients.at(clientFdIdx).preparedToSend())
                     continue;
                 // REFACTOR THIS LINE
@@ -246,7 +251,6 @@ std::vector<Server> WebServ::parseConfigFile(const std::string& filename) {
             throw WebServ::ParserException("Unclosed curly brackets");
         token = lexer.nextToken();
     }
-
     return servers;
 }
 
@@ -255,8 +259,13 @@ locationPair WebServ::parseLocation(const std::map<std::string, std::string>& le
     location_t locationStruct;
     bzero(&locationStruct, sizeof(location_t));
 
-    if (lexerParameters.count("root") > 0)
-        locationStruct.root = lexerParameters.find("root")->second;
+    if (lexerParameters.count("root") > 0) {
+        std::string tempRoot = lexerParameters.find("root")->second;
+        if (*(tempRoot.end() - 1) != '/')
+            locationStruct.root = tempRoot + "/";
+        else
+            locationStruct.root = tempRoot;
+    }
     if (lexerParameters.count("allow_methods") > 0)
         locationStruct.allowed_methods = splitStr(lexerParameters.find("allow_methods")->second, ' ');
     if (lexerParameters.count("return") > 0)
