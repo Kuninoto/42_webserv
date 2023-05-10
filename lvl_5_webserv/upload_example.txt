@@ -1,0 +1,18 @@
+-----------------------------16552412192821828043322178513
+Content-Disposition: form-data; name="fileToUpload"; filename="Screenshot from 2023-01-12 14-40-16.png"
+Content-Type: image/png
+
+PNG
+(binary)
+(binary)
+(binary)
+(binary)
+(binary)
+(binary)
+(binary)
+(binary)
+-----------------------------16552412192821828043322178513
+Content-Disposition: form-data; name="submit"
+
+Upload File
+-----------------------------16552412192821828043322178513--

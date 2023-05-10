@@ -1,6 +1,7 @@
 #ifndef UTILS_HPP
 #define UTILS_HPP
 
+#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -30,6 +31,10 @@ std::string getFileType(const std::string& file);
 std::string getFileSize(const std::string& file);
 std::string getOkHeader(const std::string& file);
 std::string getHTMLBoilerPlate(const std::string& code, const std::string& title, const std::string& body);
+
+std::string getFilename(const std::string& contentDisposition);
+
+void processUploadedFile(const std::string& filePart, const std::string& boundary);
 
 static inline void logMessage(const std::string& message) {
     std::cout << BLUE << "[" << getTime() << "] " << RESET << message << RESET << std::endl;
