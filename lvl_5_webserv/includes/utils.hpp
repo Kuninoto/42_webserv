@@ -25,10 +25,11 @@ const std::string getTime(void);
 
 bool isRegularFile(const char* path);
 bool isDirectory(const char* path);
+std::string getFileContent(const std::string& file);
 std::string getFileType(const std::string& file);
 std::string getFileSize(const std::string& file);
 std::string getOkHeader(const std::string& file);
-std::string getResponseBoilerPlate(const std::string& code, const std::string& title, const std::string& body);
+std::string getHTMLBoilerPlate(const std::string& code, const std::string& title, const std::string& body);
 
 static inline void logMessage(const std::string& message) {
     std::cout << BLUE << "[" << getTime() << "] " << RESET << message << RESET << std::endl;

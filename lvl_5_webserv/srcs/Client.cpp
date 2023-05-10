@@ -56,10 +56,12 @@ void Client::parseRequest(void) {
                 this->headers[name] = content;
             else
                 // If the content of the header is empty
-                // Bad Request
+                // send Bad Request
                 throw ClientException(RS400);
         }
     }
+
+    //checkHeaders()
 
     // Read the rest of the request content
     // GET requests can also have query strings
@@ -80,40 +82,59 @@ void Client::handleGetRequest(std::string& root, std::string& uri) {
     sendResponse(root + uri.erase(0, 1));
 }
 
-void Client::handlePostRequest(std::string& root, std::string& uri) {
-    try {
-        createEnvVars(root, uri);
-        CGI cgi;
+void Client::handlePostRequest(std::string& root, std::string& uri, const location_t& targetLocation) {
+    std::string response;
 
-        std::string response = getResponseBoilerPlate(RS200, "200", RS200);
+    try {
+        //! TODO
+        // 400 (?)
+        // if the target location doesn't have a CGI configured
+        if (!targetLocation.hasCGI)
+            throw ClientException(RS400);
+        createEnvVars(uri);
+        CGI cgi(root + targetLocation.cgi_path
+                     + uri.erase(0, 1)
+                          .substr(uri.find_last_of("/")), targetLocation.cgi_ext);
+
+        response = getHTMLBoilerPlate(RS200, "OK", getFileContent(".cgi_output"));
+    
         write(this->fd, response.c_str(), response.length());
         logMessage(this->method + " " + uri + GREEN + " -> 200 OK");
     } catch (const std::exception& e) {
-        std::cerr << e.what() << '\n';
-        std::string response = getResponseBoilerPlate(RS400, "400", RS400);
-        logMessage(this->method + " " + uri + RED + " -> 400 Bad Request");
-        this->sendResponse(response);
+        response = server.getErrorResponse();
+        write(this->fd, response.c_str(), response.length());
+        logMessage(this->method + " " + uri + RED + " -> 404 Not Found");
+        std::cerr << "CGI Error: " << e.what() << '\n';
     }
 }
 
 void Client::handleDeleteRequest(std::string& root, std::string& uri) {
     std::string filename = root + uri;
+    std::string response;
 
     if (remove(filename.c_str()) == 0) {
-        std::string response = getResponseBoilerPlate(RS200, "200", "<h1>File deleted.</h1>\n");
+        response = getHTMLBoilerPlate(RS200, "OK", "<h1>File deleted.</h1>\n");
         write(this->fd, response.c_str(), response.length());
         logMessage(this->method + " " + uri + GREEN + " -> 200 OK");
     } else {
-        write(this->fd, server.getErrorResponse().c_str(), server.getErrorResponse().length());
+        response = server.getErrorResponse();
+        write(this->fd, response.c_str(), response.length());
         logMessage(this->method + " " + uri + RED + " -> 404 Not Found");
     }
 }
 
-void Client::createEnvVars(std::string& root, std::string& uri) {
-    setenv("REQUEST_METHOD", method.c_str(), 1);
-    setenv("SCRIPT_NAME", uri.erase(0, 1).c_str(), 1);
-    setenv("PATH_INFO", root.c_str(), 1);
+void Client::createEnvVars(std::string uri) {
+    //! TODO
+    // Review/Research this info
+    // PATH_INFO saves the rest of the url past the CGI
+    // example: cgi-bin/process_form.py/yada
+    // PATH_INFO = yada
+    setenv("PATH_INFO", uri.erase(0, 1).substr(uri.find_first_of("/")).c_str(), 1);
+    std::cout << "PATH_INFO = " << getenv("PATH_INFO") << std::endl;
+
     setenv("QUERY_STRING", request_content.c_str(), 1);
+    std::cout << "QUERY_STRING = " << getenv("QUERY_STRING") << std::endl;
+
     setenv("CONTENT_LENGTH", headers["Content-Length"].c_str(), 1);
     setenv("CONTENT_TYPE", headers["Content-Type"].c_str(), 1);
 }
@@ -132,7 +153,7 @@ void Client::sendDirectoryListing(std::string uri) {
     }
     closedir(dir);
 
-    const std::string& response = getResponseBoilerPlate(RS200, this->uri_target.erase(0, 1), body);
+    const std::string& response = getHTMLBoilerPlate(RS200, this->uri_target.erase(0, 1), body);
 
     write(this->fd, response.c_str(), response.length());
     logMessage(this->method + " " + uri + GREEN + " -> 200 OK");
@@ -171,7 +192,7 @@ void Client::sendErrorCode(std::string code) {
     body += "\t\theight: 100vh;\n";
     body += "\t}\n</style>\n";
 
-    const std::string& response = getResponseBoilerPlate(code, code, body);
+    const std::string& response = getHTMLBoilerPlate(code, code, body);
     write(this->fd, response.c_str(), response.length());
 
     this->request.clear();
@@ -180,53 +201,61 @@ void Client::sendErrorCode(std::string code) {
 void Client::resolveLocation(std::string& root, std::string& uri, size_t safety_cap) {
     if (safety_cap >= 20)
         throw ClientException(RS508);
+
     size_t locate;
+    locationMap::const_iterator tempLocation;
+    locationMap::const_iterator targetLocation;
+    for (tempLocation = server.getLocations().begin(); tempLocation != server.getLocations().end(); tempLocation++) {
+        targetLocation = tempLocation;
+        if (tempLocation->first == "/" && uri != "/") continue;
 
-    locationMap::const_iterator location;
-    for (location = server.getLocations().begin(); location != server.getLocations().end(); location++) {
-        if (location->first == "/" && uri != "/") continue;
-
-        if (uri.find(location->first + '/') == std::string::npos && !endsWith(uri, location->first))
+        if (uri.find(tempLocation->first + '/') == std::string::npos
+        &&  !endsWith(uri, tempLocation->first))
             continue;
-        locate = uri.find(location->first);
+        locate = uri.find(tempLocation->first);
 
-        if (location->second.allowed_methods.size() != 0 && std::find(location->second.allowed_methods.begin(),
-                                                                      location->second.allowed_methods.end(),
-                                                                      this->method) == location->second.allowed_methods.end())
+        // if no allow_methods are set or method is forbidden
+        if (tempLocation->second.allowed_methods.size() != 0
+        && std::find(tempLocation->second.allowed_methods.begin(),
+                     tempLocation->second.allowed_methods.end(),
+                     this->method) == tempLocation->second.allowed_methods.end())
             throw ClientException(RS405);
 
-        if (location->second.redirect.size()) {
-            uri.erase(locate, location->first.size())
-                .insert(locate, location->second.redirect);
-            resolveResponse(root, uri);
+        if (tempLocation->second.redirect.size()) {
+            uri.erase(locate, tempLocation->first.size())
+               .insert(locate, tempLocation->second.redirect);
+            //! TODO
+            // this->resolveResponse()?
+            this->resolveLocation(root, uri, safety_cap);
             return;
         }
 
-        if (location->second.root.size()) {
-            uri.erase(locate, location->first.size());
-            root = location->second.root;
+        if (tempLocation->second.root.size()) {
+            uri.erase(locate, tempLocation->first.size());
+            root = tempLocation->second.root;
         }
 
         if (isDirectory((root + uri).c_str())) {
-            if (location->second.try_file.size())
-                sendResponse(root + uri + "/" + location->second.try_file);
-            else if (location->second.auto_index)
-                sendDirectoryListing(root + uri.erase(0, 1));
+            if (tempLocation->second.try_file.size())
+                this->sendResponse(root + uri + "/" + tempLocation->second.try_file);
+            else if (tempLocation->second.auto_index)
+                this->sendDirectoryListing(root + uri.erase(0, 1));
             else if (uri == "/")
-                sendResponse(root + server.getIndex());
+                this->sendResponse(root + server.getIndex());
             else
                 throw ClientException(RS403);
             return;
         }
     }
-    this->resolveResponse(root, uri);
+    this->resolveResponse(root, uri, targetLocation->second);
 }
 
-void Client::resolveResponse(std::string& root, std::string& uri) {
+void Client::resolveResponse(std::string& root, std::string& uri, const location_t& targetLocation) {
+
     if (this->method == "GET") {
         handleGetRequest(root, uri);
     } else if (this->method == "POST") {
-        handlePostRequest(root, uri);
+        handlePostRequest(root, uri, targetLocation);
     } else if (this->method == "DELETE") {
         handleDeleteRequest(root, uri);
     }

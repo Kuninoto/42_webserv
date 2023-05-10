@@ -39,22 +39,6 @@ static std::string parsePortNumber(const std::string& port_as_str) {
     return port_as_str;
 }
 
-std::string Server::createErrorResponse(void) {
-    std::string path_to_error_page = this->root + this->errorPagePath;
-    std::ifstream error_page_file(path_to_error_page.c_str(), std::ios::binary | std::ios::in);
-
-    std::string error_response =
-        "HTTP/1.1 404 Not Found\n"
-        "Content-Type: " +
-        getFileType(path_to_error_page) +
-        ";"
-        "charset=UTC-8\nContent-Length: " +
-        getFileSize(path_to_error_page) + "\n\n";
-
-    error_response.append((std::istreambuf_iterator<char>(error_page_file)), std::istreambuf_iterator<char>());
-    return error_response;
-}
-
 Server::Server(std::map<std::string, std::string>& parameters) {
     const static std::string mustHaveKeyWords[] = {
         "listen",
@@ -91,8 +75,21 @@ Server::Server(std::map<std::string, std::string>& parameters) {
     this->isDefaultServer = true;
 }
 
-void Server::addLocation(locationPair newLocationPair) {
-    this->locations.insert(newLocationPair);
+Server::~Server(void) {};
+
+std::string Server::createErrorResponse(void) {
+    std::string path_to_error_page = this->root + this->errorPagePath;
+    std::ifstream error_page_file(path_to_error_page.c_str(), std::ios::binary | std::ios::in);
+
+    std::string error_response =
+        "HTTP/1.1 404 Not Found\n"
+        "Date: " + getTimeStamp() + "\n"
+        "Server: Server: 42_Webserv/1.0 (Linux)\n" +
+        "Content-Type: " + getFileType(path_to_error_page) + "; charset=UTC-8\n" +
+        "Content-Length: " + getFileSize(path_to_error_page) + "\n\n";
+
+    error_response.append((std::istreambuf_iterator<char>(error_page_file)), std::istreambuf_iterator<char>());
+    return error_response;
 }
 
 void Server::createSocket(void) {
@@ -102,28 +99,28 @@ void Server::createSocket(void) {
 }
 
 std::ostream& operator<<(std::ostream& stream, Server& sv) {
-    stream << "SERVER = " << sv.getServerName() << '\n'
-           << "PORT = " << sv.getPort() << '\n'
-           << "HOST = " << sv.getHost() << '\n'
-           << "ERROR_PAGE = " << sv.getErrorPagePath() << '\n'
-           << "ROOT = " << sv.getRoot() << '\n'
-           << "INDEX = " << sv.getIndex() << '\n'
-           << "CLIENT_MAX_BODY_SIZE = " << sv.getMaxBodySize() << '\n'
+    stream << "SERVER = \"" << sv.getServerName() << "\"\n"
+           << "PORT = \"" << sv.getPort() << "\"\n"
+           << "HOST = \"" << sv.getHost() << "\"\n"
+           << "ERROR_PAGE = \"" << sv.getErrorPagePath() << "\"\n"
+           << "ROOT = \"" << sv.getRoot() << "\"\n"
+           << "INDEX = \"" << sv.getIndex() << "\"\n"
+           << "CLIENT_MAX_BODY_SIZE = \"" << sv.getMaxBodySize() << "\"\n"
            << "LOCATIONS --------------" << '\n';
 
-    locationMap::iterator itr;
-    for (itr = sv.locations.begin(); itr != sv.locations.end(); itr++) {
+    locationMap::const_iterator itr;
+    for (itr = sv.getLocations().begin(); itr != sv.getLocations().end(); itr++) {
         stream << '\n'
-               << "location " << itr->first << '\n'
-               << "root = " << itr->second.root << '\n'
+               << "location \"" << itr->first << "\"\n"
+               << "root = \"" << itr->second.root << "\"\n"
                << "ALLOW_METHODS = ";
         for (size_t i = 0; i < itr->second.allowed_methods.size(); i++)
             stream << "\"" << itr->second.allowed_methods.at(i) << "\" ";
         stream << '\n'
-               << "AUTO_INDEX = " << itr->second.auto_index << '\n'
-               << "RETURN = " << itr->second.redirect << '\n'
-               << "CGI_PATH = " << itr->second.cgi_path << '\n'
-               << "CGI_EXT = " << itr->second.cgi_ext << '\n';
+               << "AUTO_INDEX = \"" << (itr->second.auto_index ? "yes" : "no") << "\"\n"
+               << "RETURN = \"" << itr->second.redirect << "\"\n"
+               << "CGI_PATH = \"" << itr->second.cgi_path << "\"\n"
+               << "CGI_EXT = \"" << itr->second.cgi_ext << "\"\n";
     }
     return stream;
 }

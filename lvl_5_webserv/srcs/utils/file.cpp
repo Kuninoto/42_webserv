@@ -4,8 +4,8 @@
 
 #include <fstream>
 #include <iostream>
-#include <map>
 #include <sstream>
+#include <map>
 #include <string>
 
 #include "utils.hpp"
@@ -48,7 +48,7 @@ std::string getFileType(const std::string& file) {
     return "text/plain";
 }
 
-std::string getResponseBoilerPlate(const std::string& code, const std::string& title, const std::string& body) {
+std::string getHTMLBoilerPlate(const std::string& code, const std::string& title, const std::string& body) {
     std::string html =
         "<!DOCTYPE html>\n"
         "<html lang=\"en\">\n"
@@ -56,23 +56,18 @@ std::string getResponseBoilerPlate(const std::string& code, const std::string& t
         "    <meta charset=\"UTF-8\">\n"
         "    <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n"
         "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n"
-        "    <title>" +
-        title +
-        "</title>\n"
+        "    <title>" + title + "</title>\n"
         "</head>\n"
-        "<body>\n" +
-        body +
-        "</body>\n"
+        "<body>\n    " + body + "\n</body>\n"
         "</html>\n";
 
     std::string response =
-        "HTTP/1.1 " + code +
-        "\n"
-        "Content-Type: text/html\n"
-        "Content-Length: " +
-        ft_ntos(html.size()) +
-        "Server: WebServ\n\n" +
-        html;
+        "HTTP/1.1 " + code + "\n"
+        "Date: " + getTimeStamp() + "\n"
+        "Server: 42_Webserv/1.0 (Linux)\n" +
+        "Content-Type: text/html; charset=UTF-8\n" +
+        "Content-Length: " + ft_ntos(html.size()) + "\n\n"
+        + html;
     return response;
 }
 
@@ -97,14 +92,19 @@ std::string getFileSize(const std::string& file) {
 std::string getOkHeader(const std::string& file) {
     std::string header =
         "HTTP/1.1 200 OK\n"
-        "Date: " +
-        getTimeStamp() +
-        "\n"
-        "Content-Type: " +
-        getFileType(file) +
-        "; charset=UTC-8\n"
-        "Content-Length: " +
-        getFileSize(file) +
-        "Server: WebServ\n\n";
+        "Date: " + getTimeStamp() + "\n"
+        "Server: Server: 42_Webserv/1.0 (Linux)\n" +
+        "Content-Type: " + getFileType(file) + "; charset=UTF-8\n" +
+        "Content-Length: " + getFileSize(file) + "\n\n";
+
     return header;
+}
+
+std::string getFileContent(const std::string& file) {
+    std::ifstream fileStream(file.c_str(), std::ios::binary | std::ios::in);
+    std::string fileContent;
+
+    fileContent.append((std::istreambuf_iterator<char>(fileStream)),
+                        std::istreambuf_iterator<char>());
+    return fileContent;
 }

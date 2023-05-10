@@ -45,10 +45,14 @@
 
 [Common Gateway Interface (CGI)](https://en.wikipedia.org/wiki/Common_Gateway_Interface)  
 
-**HTTP Request Methods**
+[URL vs. URI](https://stackoverflow.com/questions/4239941/difference-between-url-and-uri)
+
+**HTTP Request Methods**  
 [GET](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/GET#syntax)  
 [POST](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST)  
 [DELETE](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/DELETE)  
+
+[HTTP Docs](https://developer.mozilla.org/en-US/docs/Web/HTTP)
 
 ---
 Made by Nuno Carvalho (Kuninoto) | nnuno-ca@student.42porto.com  

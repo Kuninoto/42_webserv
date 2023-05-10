@@ -3,16 +3,13 @@
 
 #include <dirent.h>
 #include <fcntl.h>
-#include <stdint.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include <algorithm>
 #include <cstdlib>
 #include <iostream>
 #include <map>
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -22,29 +19,25 @@ class Lexer;
 
 class CGI {
    public:
-    CGI(void);
+    CGI(const std::string& cgi_path, const std::string& cgi_ext);
     ~CGI(void);
 
     std::string response;
 
    private:
     void runCGI(void);
-    bool validPath(void);
     void runScript(void);
-    void setExtension(void);
     void createArgs(void);
     void parseQueryString(void);
     void getEnvVars(void);
-    void checkVars(std::string method);
+    void checkVars(void);
 
     char **args;
+    const std::string& cgi_path;
+    const std::string& cgi_ext;
     std::vector<std::string> params;
     std::map<std::string, std::string> envVars;
-    std::string method;
-    std::string filePath;
-    std::string extension;
     std::string runner;
-    std::string error;
 };
 
 class CGIException : public std::exception {

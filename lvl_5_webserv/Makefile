@@ -1,11 +1,11 @@
 CC = c++
-CFLAGS = -Wall -Wextra -Werror -std=c++98 # -Wno-unused-result -O3 # -g -fsanitize=address
+CFLAGS = -Wall -Wextra -Werror -std=c++98 -g -fsanitize=address # -Wno-unused-result -O3
 INCLUDE = -I./includes
 VPATH = srcs srcs/utils
 RM = rm -rf
 
 UTILS = splitStr trimStr endsWith sliceVec time file
-GENERAL = Lexer WebServ Server Client CGI
+GENERAL = Lexer CGI Server Client WebServ
 
 NAME = webserv
 TEST_CONFIG_FILE = config/reggin.conf
