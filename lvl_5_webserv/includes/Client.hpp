@@ -38,17 +38,6 @@ class Client {
         return !(this->request_sent || this->request.find(REQUEST_DELIMITER) == std::string::npos);
     };
 
-    class ClientException : public std::exception {
-       public:
-        std::string s;
-        ClientException(std::string ss) : s(ss){};
-        ~ClientException() throw() {}
-
-        virtual const char* what() const throw() {
-            return s.c_str();
-        };
-    };
-
     std::map<std::string, std::string> headers;
 
     template <typename K, typename V>
@@ -62,6 +51,17 @@ class Client {
         std::cout << "-------------------------------" << std::endl;
     }
 
+    class ClientException : public std::exception {
+       public:
+        std::string s;
+        ClientException(std::string ss) : s(ss){};
+        ~ClientException() throw() {}
+
+        virtual const char* what() const throw() {
+            return s.c_str();
+        };
+    };
+
    private:
     Server server;
 
@@ -70,20 +70,19 @@ class Client {
     bool request_sent;
 
     std::string method;
-
     std::string request;
     std::string uri_target;
     std::string request_content;
 
     void parseRequest(void);
     void resolveLocation(std::string& root, std::string& uri, size_t safety_cap);
-    void resolveResponse(std::string& root, std::string& uri);
+    void resolveResponse(std::string& root, std::string& uri, const location_t& targetLocation);
     void sendDirectoryListing(std::string uri);
     void sendResponse(std::string uri);
     void sendErrorCode(std::string code);
-    void createEnvVars(std::string& root, std::string& uri);
+    void createEnvVars(std::string uri);
     void handleGetRequest(std::string& root, std::string& uri);
-    void handlePostRequest(std::string& root, std::string& uri);
+    void handlePostRequest(std::string& root, std::string& uri, const location_t& targetLocation);
     void handleDeleteRequest(std::string& root, std::string& uri);
 };
 

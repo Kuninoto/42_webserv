@@ -13,7 +13,8 @@ bool g_stopServer = false;
 
 static void closeServer(int signum) {
     (void)signum;
-    logMessage("Closing WebServer");
+    std::cout << "\n";
+    logMessage("Closing 42_Webserv...");
     g_stopServer = true;
 }
 
@@ -27,18 +28,8 @@ WebServ::WebServ(std::string filename) {
     this->reserved_sockets = this->getServerUsedSockets();
 };
 
-bool WebServ::isFdAServer(int fd) {
-    std::vector<Server>::iterator v_it;
-    std::vector<Server>::iterator v_end = this->servers.end();
-
-    for (v_it = this->servers.begin(); v_it != v_end; v_it++) {
-        if (fd == v_it->getSocketFd())
-            return true;
-    }
-    return false;
-}
-
 void WebServ::bootServers(void) {
+    logMessage("Booting servers...");
     int opt = 1;
     struct addrinfo hints, *result;
 
@@ -74,6 +65,17 @@ void WebServ::bootServers(void) {
         pollfds.push_back(pollstruct);
         logMessage(server->getHost() + ":" + server->getPort());
     }
+}
+
+bool WebServ::isFdAServer(int fd) {
+    std::vector<Server>::iterator v_it;
+    std::vector<Server>::iterator v_end = this->servers.end();
+
+    for (v_it = this->servers.begin(); v_it != v_end; v_it++) {
+        if (v_it->isDefaultServer && fd == v_it->getSocketFd())
+            return true;
+    }
+    return false;
 }
 
 void WebServ::acceptClientConnection(int idx) {
@@ -159,7 +161,7 @@ WebServ::~WebServ(void) {
         shutdown(pollfds[i].fd, SHUT_RDWR);
         close(pollfds[i].fd);
     }
-    logMessage("WebServer closed");
+    logMessage("Closed successfully!");
 };
 
 void WebServ::duplicateServers(void) {
@@ -207,6 +209,44 @@ Server& WebServ::getServerByName(const std::string& buffer, Server& default_serv
     return default_server;
 }
 
+static locationPair parseLocation(const std::map<std::string, std::string>& lexerParameters,
+                                    std::string& locationPath) {
+    location_t newLocation;
+
+    if (lexerParameters.count("root") > 0) {
+        std::string tempRoot = lexerParameters.find("root")->second;
+        if (*(tempRoot.end() - 1) != '/')
+            newLocation.root = tempRoot + "/";
+        else
+            newLocation.root = tempRoot;
+    }
+    if (lexerParameters.count("allow_methods") > 0)
+        newLocation.allowed_methods = splitStr(lexerParameters.find("allow_methods")->second, ' ');
+    if (lexerParameters.count("return") > 0)
+        newLocation.redirect = lexerParameters.find("return")->second;
+    if (lexerParameters.count("auto_index") > 0)
+        newLocation.auto_index = lexerParameters.find("auto_index")->second == "on" ? true : false;
+    if (lexerParameters.count("try_file") > 0)
+        newLocation.try_file = lexerParameters.find("try_file")->second;
+    if (lexerParameters.count("cgi_path") > 0
+    &&  lexerParameters.count("cgi_ext") > 0) {
+        newLocation.hasCGI = true;
+        newLocation.cgi_path = lexerParameters.find("cgi_path")->second;
+        newLocation.cgi_ext = lexerParameters.find("cgi_ext")->second;
+    }
+    else
+        newLocation.hasCGI = false;
+    trimStr(locationPath, " ");
+    return std::make_pair<std::string, location_t>(locationPath, newLocation);
+}
+
+static void readLocationBlock(Lexer& lexer, Token& token) {
+    token = lexer.nextToken();
+    while (token.type != RIGHT_CURLY_BRACKET) {
+        token = lexer.nextToken();
+    }
+}
+
 std::vector<Server> WebServ::parseConfigFile(const std::string& filename) {
     Lexer lexer(filename);
     std::vector<Server> servers;
@@ -236,7 +276,7 @@ std::vector<Server> WebServ::parseConfigFile(const std::string& filename) {
                     lexer.parameters["location"] = temp;
                 }
                 readLocationBlock(lexer, token);
-                servers.back().locations.insert(parseLocation(lexer.parameters, lexer.parameters["location"]));
+                servers.back().addLocation(parseLocation(lexer.parameters, lexer.parameters["location"]));
                 lexer.parameters.clear();
             } else if (curly_brackets == 0 && !hasLocation) {
                 servers.push_back(Server(lexer.parameters));
@@ -252,44 +292,4 @@ std::vector<Server> WebServ::parseConfigFile(const std::string& filename) {
         token = lexer.nextToken();
     }
     return servers;
-}
-
-locationPair WebServ::parseLocation(const std::map<std::string, std::string>& lexerParameters,
-                                    std::string& locationPath) {
-    location_t locationStruct;
-    bzero(&locationStruct, sizeof(location_t));
-
-    if (lexerParameters.count("root") > 0) {
-        std::string tempRoot = lexerParameters.find("root")->second;
-        if (*(tempRoot.end() - 1) != '/')
-            locationStruct.root = tempRoot + "/";
-        else
-            locationStruct.root = tempRoot;
-    }
-    if (lexerParameters.count("allow_methods") > 0)
-        locationStruct.allowed_methods = splitStr(lexerParameters.find("allow_methods")->second, ' ');
-    if (lexerParameters.count("return") > 0)
-        locationStruct.redirect = lexerParameters.find("return")->second;
-    if (lexerParameters.count("auto_index") > 0)
-        locationStruct.auto_index = lexerParameters.find("auto_index")->second == "on" ? true : false;
-    if (lexerParameters.count("try_file") > 0)
-        locationStruct.try_file = lexerParameters.find("try_file")->second;
-    if (lexerParameters.count("cgi_path") > 0) {
-        std::string temp = lexerParameters.find("cgi_path")->second;
-        if (access(temp.c_str(), X_OK) != 0) {
-            throw WebServ::ParserException("invalid cgi_path \"" + temp + "\"");
-        }
-        locationStruct.cgi_path = temp;
-    }
-    if (lexerParameters.count("cgi_ext") > 0)
-        locationStruct.cgi_ext = lexerParameters.find("cgi_ext")->second;
-    trimStr(locationPath, " ");
-    return std::make_pair<std::string, location_t>(locationPath, locationStruct);
-}
-
-void WebServ::readLocationBlock(Lexer& lexer, Token& token) {
-    token = lexer.nextToken();
-    while (token.type != RIGHT_CURLY_BRACKET) {
-        token = lexer.nextToken();
-    }
 }

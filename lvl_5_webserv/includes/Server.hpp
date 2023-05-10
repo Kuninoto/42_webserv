@@ -17,9 +17,10 @@ typedef struct location_s {
     std::string redirect;
     bool auto_index;
     std::string try_file;
+    bool hasCGI;
     std::string cgi_path;
     std::string cgi_ext;
-} location_t;
+}               location_t;
 
 typedef std::map<std::string, location_t> locationMap;
 typedef std::pair<std::string, location_t> locationPair;
@@ -27,7 +28,7 @@ typedef std::pair<std::string, location_t> locationPair;
 class Server {
    public:
     Server(std::map<std::string, std::string>& parameters);
-    ~Server(void){};
+    ~Server(void);
 
     const std::string& getPort(void) const { return this->port; };
     const std::string& getHost(void) const { return this->host; };
@@ -40,12 +41,11 @@ class Server {
     size_t getMaxBodySize(void) const { return this->clientMaxBodySize; };
     int getSocketFd(void) const { return this->socketFd; };
 
-    void addLocation(locationPair locationPair);
+    void addLocation(locationPair newlocationPair) { this->locations.insert(newlocationPair); };
     void createSocket(void);
 
     bool isDefaultServer;  // default for host:port
 
-    locationMap locations;
 
    private:
     std::string port;
@@ -57,6 +57,8 @@ class Server {
     size_t clientMaxBodySize;
     std::string errorResponse;
     int socketFd;
+
+    locationMap locations;
 
     std::string createErrorResponse(void);
 };

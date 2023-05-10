@@ -49,11 +49,6 @@ class WebServ {
     std::vector<struct pollfd> pollfds;
 
     size_t reserved_sockets;
-
-    void readLocationBlock(Lexer& lexer, Token& token);
-
-    locationPair parseLocation(const std::map<std::string, std::string>& lexerParameters,
-                               std::string& locationPath);
 };
 
 #endif  // WEBSERV_HPP

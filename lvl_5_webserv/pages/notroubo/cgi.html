@@ -5,18 +5,22 @@
     <title>Delete Request Example</title>
   </head>
   <body>
-    <h1>DELETE Request</h1>
+    <h1>CGI Example</h1>
+    <p><b>DELETE Request</b></p>
     <label for="filename">File to DELETE:</label>
     <input type="text" id="filename" name="filename" />
     <button onclick="sendDeleteRequest()">Delete File</button>
 
-    <h1>POST Request</h1>
-    <form method="POST" action="create_file.py">
-      <label for="name">Query to POST: </label>
-      <input name="text" id="name" type="text" />
-      <button>Send Query</button>
-    </form>
-
+    <head>
+      <h2>Enter Your Name and Age</h2>
+      <form action="/cgi-bin/process_form.py" method="post">
+        <label for="name">Name:</label>
+        <input type="text" name="name" id="name"><br>
+        <label for="age">Age:</label>
+        <input type="number" name="age" id="age"><br>
+        <input type="submit" value="Submit">
+      </form>
+    
     <script>
       function sendDeleteRequest() {
         const filename = document.getElementById("filename").value;
