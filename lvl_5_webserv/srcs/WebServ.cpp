@@ -49,11 +49,16 @@ void WebServ::bootServers(void) {
         if (setsockopt(server->getSocketFd(), SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(int)) < 0)
             throw std::runtime_error("fatal: setsocketopt(): " + std::string(strerror(errno)));
 
-        if (getaddrinfo(server->getHost().c_str(), server->getPort().c_str(), &hints, &result) != 0)
+        if (getaddrinfo(server->getHost().c_str(), server->getPort().c_str(), &hints, &result) != 0) {
+            freeaddrinfo(result);
             throw std::runtime_error("fatal: getaddrinfo(): " + std::string(strerror(errno)));
+        }
 
         if (bind(server->getSocketFd(), result->ai_addr, result->ai_addrlen) == -1)
+        {
+            freeaddrinfo(result);
             throw std::runtime_error("fatal: bind(): " + std::string(strerror(errno)));
+        }
 
         if (listen(server->getSocketFd(), MAX_PENDING_CONNECTIONS) == -1)
             throw std::runtime_error("fatal: listen(): " + std::string(strerror(errno)));

@@ -61,7 +61,7 @@ void Client::parseRequest(void) {
         }
     }
 
-    //checkHeaders()
+    // checkHeaders()
 
     // Read the rest of the request content
     // GET requests can also have query strings
@@ -85,19 +85,39 @@ void Client::handleGetRequest(std::string& root, std::string& uri) {
 void Client::handlePostRequest(std::string& root, std::string& uri, const location_t& targetLocation) {
     std::string response;
 
-    try {
-        //! TODO
-        // 400 (?)
-        // if the target location doesn't have a CGI configured
-        if (!targetLocation.hasCGI)
-            throw ClientException(RS400);
-        createEnvVars(uri);
-        CGI cgi(root + targetLocation.cgi_path
-                     + uri.erase(0, 1)
-                          .substr(uri.find_last_of("/")), targetLocation.cgi_ext);
+    // std::cout << "AT POST:" << std::endl;
+    // std::cout << "REQUEST: " << this->request << std::endl;
 
-        response = getHTMLBoilerPlate(RS200, "OK", getFileContent(".cgi_output"));
-    
+    try {
+        if (uri == "/upload") {
+            std::cout << "UPLOAD" << std::endl;
+            //! TODO
+            // 400 (?)
+            if (this->headers.count("Content-Type") == 0) {
+                throw ClientException(RS400);
+            }
+            std::string content_type = this->headers["Content-Type"];
+            std::string boundary = content_type.substr(content_type.find("boundary=") + 9);
+
+            processUploadedFile(request.substr(request.find(boundary, request.find(boundary) + boundary.length())), boundary);
+            response = getHTMLBoilerPlate(RS200, "OK", "200 OK");
+        }
+
+        //! TODO
+        // if the target location doesn't have a CGI configured
+        else if (targetLocation.hasCGI) {
+            // 400 (?)
+            if (uri.find(targetLocation.cgi_path) == std::string::npos) {
+                throw ClientException(RS400);
+            }
+            createEnvVars(uri);
+            CGI cgi(root + targetLocation.cgi_path + uri.erase(0, 1).substr(uri.find_last_of("/")), targetLocation.cgi_ext);
+            response = getHTMLBoilerPlate(RS200, "OK", getFileContent(".cgi_output"));
+        } else {
+            // POST that isnt an upload neither for CGI
+            // 400 ?
+            throw ClientException(RS400);
+        }
         write(this->fd, response.c_str(), response.length());
         logMessage(this->method + " " + uri + GREEN + " -> 200 OK");
     } catch (const std::exception& e) {
@@ -209,21 +229,19 @@ void Client::resolveLocation(std::string& root, std::string& uri, size_t safety_
         targetLocation = tempLocation;
         if (tempLocation->first == "/" && uri != "/") continue;
 
-        if (uri.find(tempLocation->first + '/') == std::string::npos
-        &&  !endsWith(uri, tempLocation->first))
+        if (uri.find(tempLocation->first + '/') == std::string::npos && !endsWith(uri, tempLocation->first))
             continue;
         locate = uri.find(tempLocation->first);
 
         // if no allow_methods are set or method is forbidden
-        if (tempLocation->second.allowed_methods.size() != 0
-        && std::find(tempLocation->second.allowed_methods.begin(),
-                     tempLocation->second.allowed_methods.end(),
-                     this->method) == tempLocation->second.allowed_methods.end())
+        if (tempLocation->second.allowed_methods.size() != 0 && std::find(tempLocation->second.allowed_methods.begin(),
+                                                                          tempLocation->second.allowed_methods.end(),
+                                                                          this->method) == tempLocation->second.allowed_methods.end())
             throw ClientException(RS405);
 
         if (tempLocation->second.redirect.size()) {
             uri.erase(locate, tempLocation->first.size())
-               .insert(locate, tempLocation->second.redirect);
+                .insert(locate, tempLocation->second.redirect);
             //! TODO
             // this->resolveResponse()?
             this->resolveLocation(root, uri, safety_cap);
@@ -251,7 +269,6 @@ void Client::resolveLocation(std::string& root, std::string& uri, size_t safety_
 }
 
 void Client::resolveResponse(std::string& root, std::string& uri, const location_t& targetLocation) {
-
     if (this->method == "GET") {
         handleGetRequest(root, uri);
     } else if (this->method == "POST") {
