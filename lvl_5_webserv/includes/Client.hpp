@@ -80,7 +80,7 @@ class Client {
     void sendDirectoryListing(std::string uri);
     void sendResponse(std::string uri);
     void sendErrorCode(std::string code);
-    void createEnvVars(std::string uri);
+    void createEnvVars(const std::string& serverRoot, std::string uri, const location_t& targetLocation, bool upload);
     void handleGetRequest(std::string& root, std::string& uri);
     void handlePostRequest(std::string& root, std::string& uri, const location_t& targetLocation);
     void handleDeleteRequest(std::string& root, std::string& uri);

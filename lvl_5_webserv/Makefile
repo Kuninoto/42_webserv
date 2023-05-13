@@ -4,7 +4,7 @@ INCLUDE = -I./includes
 VPATH = srcs srcs/utils
 RM = rm -rf
 
-UTILS = splitStr trimStr endsWith sliceVec time file filePayloadParser
+UTILS = splitStr trimStr endsWith sliceVec time file filePayloadParser getNextLine
 GENERAL = Lexer CGI Server Client WebServ
 
 NAME = webserv

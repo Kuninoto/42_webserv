@@ -19,7 +19,7 @@ class Lexer;
 
 class CGI {
    public:
-    CGI(const std::string& cgi_path, const std::string& cgi_ext);
+    CGI(const std::string& cgi_ext);
     ~CGI(void);
 
     std::string response;
@@ -32,9 +32,9 @@ class CGI {
     void getEnvVars(void);
     void checkVars(void);
 
-    char **args;
-    const std::string& cgi_path;
-    const std::string& cgi_ext;
+    char** args;
+    std::string cgi_path;
+    std::string cgi_ext;
     std::vector<std::string> params;
     std::map<std::string, std::string> envVars;
     std::string runner;
@@ -45,12 +45,12 @@ class CGIException : public std::exception {
     CGIException(const std::string error) throw() { message = new std::string(error); };
     virtual ~CGIException() throw() { delete message; }
 
-    virtual const char *what() const throw() {
+    virtual const char* what() const throw() {
         return message->c_str();
     };
 
    private:
-    const std::string *message;
+    const std::string* message;
 };
 
 #endif  // CGI_HPP

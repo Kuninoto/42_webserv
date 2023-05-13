@@ -54,8 +54,7 @@ void WebServ::bootServers(void) {
             throw std::runtime_error("fatal: getaddrinfo(): " + std::string(strerror(errno)));
         }
 
-        if (bind(server->getSocketFd(), result->ai_addr, result->ai_addrlen) == -1)
-        {
+        if (bind(server->getSocketFd(), result->ai_addr, result->ai_addrlen) == -1) {
             freeaddrinfo(result);
             throw std::runtime_error("fatal: bind(): " + std::string(strerror(errno)));
         }
@@ -215,7 +214,7 @@ Server& WebServ::getServerByName(const std::string& buffer, Server& default_serv
 }
 
 static locationPair parseLocation(const std::map<std::string, std::string>& lexerParameters,
-                                    std::string& locationPath) {
+                                  std::string& locationPath) {
     location_t newLocation;
 
     if (lexerParameters.count("root") > 0) {
@@ -233,13 +232,11 @@ static locationPair parseLocation(const std::map<std::string, std::string>& lexe
         newLocation.auto_index = lexerParameters.find("auto_index")->second == "on" ? true : false;
     if (lexerParameters.count("try_file") > 0)
         newLocation.try_file = lexerParameters.find("try_file")->second;
-    if (lexerParameters.count("cgi_path") > 0
-    &&  lexerParameters.count("cgi_ext") > 0) {
+    if (lexerParameters.count("cgi_path") > 0 && lexerParameters.count("cgi_ext") > 0) {
         newLocation.hasCGI = true;
         newLocation.cgi_path = lexerParameters.find("cgi_path")->second;
         newLocation.cgi_ext = lexerParameters.find("cgi_ext")->second;
-    }
-    else
+    } else
         newLocation.hasCGI = false;
     trimStr(locationPath, " ");
     return std::make_pair<std::string, location_t>(locationPath, newLocation);

@@ -8,20 +8,25 @@
 using std::cout;
 using std::endl;
 
-CGI::CGI(const std::string& cgi_path, const std::string& cgi_ext)
-    : cgi_path(cgi_path), cgi_ext(cgi_ext) {
+CGI::CGI(const std::string& cgi_ext) {
     cout << "RUNNING CGI" << endl;
+    this->cgi_path = std::string(getenv("SCRIPT_FILENAME"));
+    this->cgi_ext = cgi_ext;
     cout << "CGI PATH: " << this->cgi_path << endl;
     cout << "CGI Ext: " << this->cgi_ext << endl;
 
-    std::string ext = cgi_path.substr(cgi_path.find('.'));
+    size_t dotPos = cgi_path.find_last_of('.');
+    if (dotPos == std::string::npos)
+        throw CGIException("No extension. Expected \"" + cgi_ext + "\"");
+
+    std::string ext = cgi_path.substr(dotPos);
     if (ext != cgi_ext)
         throw CGIException("Invalid extension \"" + ext + "\" expected \"" + cgi_ext + "\"");
     this->runCGI();
 }
 
 CGI::~CGI(void) {
-    remove(".cgi_output");
+    // remove(".cgi_output");
     for (size_t i = 0; this->args[i]; i += 1)
         free(this->args[i]);
     delete[] this->args;
@@ -29,7 +34,7 @@ CGI::~CGI(void) {
 
 void CGI::runCGI(void) {
     this->getEnvVars();
-    // this->checkVars();
+    this->checkVars();
     if (access(this->cgi_path.c_str(), F_OK) != 0)
         throw CGIException("Invalid CGI file");
     this->createArgs();
@@ -43,13 +48,9 @@ void CGI::runCGI(void) {
  * @return false if an obligatory variable is missing
  */
 void CGI::getEnvVars(void) {
-    envVars["PATH_INFO"] = getenv("PATH_INFO");
-    envVars["QUERY_STRING"] = getenv("QUERY_STRING");
-    envVars["CONTENT_LENGTH"] = getenv("CONTENT_LENGTH");
-    envVars["CONTENT_TYPE"] = getenv("CONTENT_TYPE");
-
-    if (!envVars["QUERY_STRING"].empty())
-        this->parseQueryString();
+    envVars["QUERY_STRING"] = getenv("QUERY_STRING") ? getenv("QUERY_STRING") : "";
+    envVars["CONTENT_LENGTH"] = getenv("CONTENT_LENGTH") ? getenv("CONTENT_LENGTH") : "";
+    envVars["CONTENT_TYPE"] = getenv("CONTENT_TYPE") ? getenv("CONTENT_TYPE") : "";
 }
 
 /**
@@ -60,9 +61,6 @@ void CGI::getEnvVars(void) {
  * @return false
  */
 void CGI::checkVars(void) {
-    if (envVars["PATH_INFO"].empty())
-        throw CGIException("PATH_INFO variable missing");
-
     // if (method == "POST") {
     if (envVars["QUERY_STRING"].empty())
         throw CGIException("QUERY_STRING variable missing");
@@ -85,8 +83,7 @@ void CGI::runScript(void) {
         std::cout << args[i] << " ";
     std::cout << std::endl;
 
-    int outputFd = open(std::string(".cgi_output").c_str(),
-                        O_CREAT | O_WRONLY | O_TRUNC, 0644);
+    int outputFd = open(".cgi_output", O_CREAT | O_WRONLY | O_TRUNC, 0644);
     if (outputFd == -1)
         throw CGIException("open() failed");
 
@@ -134,39 +131,5 @@ void CGI::createArgs(void) {
         //     i += 1;
         // }
         args[i] = NULL;
-    }
-}
-
-/**
- * @brief Parses the query string so that it can be passed as arguments to the script
- */
-void CGI::parseQueryString(void) {
-    std::string value, param;
-    size_t pos, equal;
-    std::string qs(envVars["QUERY_STRING"]);
-
-    while (!qs.empty()) {
-        pos = qs.find("&");
-
-        if (pos != std::string::npos) {
-            param = qs.substr(0, pos);
-        } else {
-            param = qs;
-            qs.clear();
-        }
-
-        equal = param.find("=");
-        if (equal != std::string::npos) {
-            value = param.substr(equal + 1, pos);
-            qs.erase(0, pos + 1);
-        } else {
-            value = param;
-        }
-
-        for (size_t i = 0; i < value.size(); i++) {
-            if (value[i] == '+')
-                value[i] = ' ';
-        }
-        params.push_back(value);
     }
 }
