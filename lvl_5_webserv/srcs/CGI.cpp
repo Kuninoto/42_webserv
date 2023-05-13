@@ -9,17 +9,15 @@ using std::cout;
 using std::endl;
 
 CGI::CGI(const std::string& cgi_path, const std::string& cgi_ext)
-: cgi_path(cgi_path), cgi_ext(cgi_ext) {
-
+    : cgi_path(cgi_path), cgi_ext(cgi_ext) {
     cout << "RUNNING CGI" << endl;
     cout << "CGI PATH: " << this->cgi_path << endl;
     cout << "CGI Ext: " << this->cgi_ext << endl;
 
-    std::string ext = cgi_path.substr(cgi_path.find('.')); 
+    std::string ext = cgi_path.substr(cgi_path.find('.'));
     if (ext != cgi_ext)
         throw CGIException("Invalid extension \"" + ext + "\" expected \"" + cgi_ext + "\"");
     this->runCGI();
-
 }
 
 CGI::~CGI(void) {
@@ -65,13 +63,13 @@ void CGI::checkVars(void) {
     if (envVars["PATH_INFO"].empty())
         throw CGIException("PATH_INFO variable missing");
 
-    //if (method == "POST") {
-        if (envVars["QUERY_STRING"].empty())
-            throw CGIException("QUERY_STRING variable missing");
-        if (envVars["CONTENT_LENGTH"].empty())
-            throw CGIException("CONTENT_LENGTH variable missing");
-        if (envVars["CONTENT_TYPE"].empty())
-            throw CGIException("CONTENT_TYPE variable missing");
+    // if (method == "POST") {
+    if (envVars["QUERY_STRING"].empty())
+        throw CGIException("QUERY_STRING variable missing");
+    if (envVars["CONTENT_LENGTH"].empty())
+        throw CGIException("CONTENT_LENGTH variable missing");
+    if (envVars["CONTENT_TYPE"].empty())
+        throw CGIException("CONTENT_TYPE variable missing");
     //}
 }
 
@@ -116,25 +114,25 @@ void CGI::createArgs(void) {
 
     if (cgi_ext == ".py") {
         runner = "/usr/bin/python3";
-        args = new char *[3 + params.size()];
+        args = new char*[3 + params.size()];
         args[0] = strdup("python3");
         args[1] = strdup(this->cgi_path.c_str());
-        //for (size_t param = 0; param < params.size(); param += 1) {
-        //    args[i] = strdup(params[param].c_str());
-        //    i += 1;
-        //}
+        // for (size_t param = 0; param < params.size(); param += 1) {
+        //     args[i] = strdup(params[param].c_str());
+        //     i += 1;
+        // }
         args[i] = NULL;
     }
 
     else if (cgi_ext == ".php") {
         runner = "/usr/bin/php";
-        args = new char *[3 + params.size()];
+        args = new char*[3 + params.size()];
         args[0] = strdup("php");
         args[1] = strdup(this->cgi_path.c_str());
-        //for (size_t param = 0; param < params.size(); param += 1) {
-        //    args[i] = strdup(params[param].c_str());
-        //    i += 1;
-        //}
+        // for (size_t param = 0; param < params.size(); param += 1) {
+        //     args[i] = strdup(params[param].c_str());
+        //     i += 1;
+        // }
         args[i] = NULL;
     }
 }
