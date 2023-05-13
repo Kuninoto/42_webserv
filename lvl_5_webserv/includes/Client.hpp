@@ -4,6 +4,7 @@
 #include <unistd.h>
 
 #include <cstring>
+#include <ctime>
 #include <fstream>
 #include <iostream>
 
@@ -24,6 +25,8 @@
 #define RS505 "505 HTTP Version Not Supported"
 #define RS508 "508 Loop Detected"
 
+#define TIMEOUT_TIME_SECONDS 10
+
 class Client {
    public:
     Client(Server server, int fd);
@@ -34,8 +37,13 @@ class Client {
     int getFd(void) const { return this->fd; };
     Server& getTargetServer(void) { return this->server; };
     void setTargetServer(Server& server) { this->server = server; };
+
     bool preparedToSend(void) {
         return !(this->request_sent || this->request.find(REQUEST_DELIMITER) == std::string::npos);
+    };
+
+    bool timeout(void) {
+        return std::time(NULL) - this->last_request > TIMEOUT_TIME_SECONDS;
     };
 
     std::map<std::string, std::string> headers;
@@ -73,6 +81,7 @@ class Client {
     std::string request;
     std::string uri_target;
     std::string request_content;
+    std::time_t last_request;
 
     void parseRequest(void);
     void resolveLocation(std::string& root, std::string& uri, size_t safety_cap);

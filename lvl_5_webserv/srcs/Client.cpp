@@ -10,6 +10,7 @@
 Client::Client(Server server, int fd) : server(server), fd(fd), request_sent(false){};
 
 void Client::setRequest(std::string request) {
+    this->last_request = std::time(NULL);
     this->request_sent = false;
     this->request.append(request);
 }
@@ -61,7 +62,7 @@ void Client::parseRequest(void) {
         }
     }
 
-    //checkHeaders()
+    // checkHeaders()
 
     // Read the rest of the request content
     // GET requests can also have query strings
@@ -92,12 +93,10 @@ void Client::handlePostRequest(std::string& root, std::string& uri, const locati
         if (!targetLocation.hasCGI)
             throw ClientException(RS400);
         createEnvVars(uri);
-        CGI cgi(root + targetLocation.cgi_path
-                     + uri.erase(0, 1)
-                          .substr(uri.find_last_of("/")), targetLocation.cgi_ext);
+        CGI cgi(root + targetLocation.cgi_path + uri.erase(0, 1).substr(uri.find_last_of("/")), targetLocation.cgi_ext);
 
         response = getHTMLBoilerPlate(RS200, "OK", getFileContent(".cgi_output"));
-    
+
         write(this->fd, response.c_str(), response.length());
         logMessage(this->method + " " + uri + GREEN + " -> 200 OK");
     } catch (const std::exception& e) {
@@ -209,21 +208,19 @@ void Client::resolveLocation(std::string& root, std::string& uri, size_t safety_
         targetLocation = tempLocation;
         if (tempLocation->first == "/" && uri != "/") continue;
 
-        if (uri.find(tempLocation->first + '/') == std::string::npos
-        &&  !endsWith(uri, tempLocation->first))
+        if (uri.find(tempLocation->first + '/') == std::string::npos && !endsWith(uri, tempLocation->first))
             continue;
         locate = uri.find(tempLocation->first);
 
         // if no allow_methods are set or method is forbidden
-        if (tempLocation->second.allowed_methods.size() != 0
-        && std::find(tempLocation->second.allowed_methods.begin(),
-                     tempLocation->second.allowed_methods.end(),
-                     this->method) == tempLocation->second.allowed_methods.end())
+        if (tempLocation->second.allowed_methods.size() != 0 && std::find(tempLocation->second.allowed_methods.begin(),
+                                                                          tempLocation->second.allowed_methods.end(),
+                                                                          this->method) == tempLocation->second.allowed_methods.end())
             throw ClientException(RS405);
 
         if (tempLocation->second.redirect.size()) {
             uri.erase(locate, tempLocation->first.size())
-               .insert(locate, tempLocation->second.redirect);
+                .insert(locate, tempLocation->second.redirect);
             //! TODO
             // this->resolveResponse()?
             this->resolveLocation(root, uri, safety_cap);
@@ -251,7 +248,6 @@ void Client::resolveLocation(std::string& root, std::string& uri, size_t safety_
 }
 
 void Client::resolveResponse(std::string& root, std::string& uri, const location_t& targetLocation) {
-
     if (this->method == "GET") {
         handleGetRequest(root, uri);
     } else if (this->method == "POST") {
@@ -266,14 +262,15 @@ void Client::response(void) {
     if (!this->preparedToSend())
         return;
     this->request_sent = true;
+    this->last_request = std::time(NULL);
 
     try {
         this->parseRequest();
-
         std::string root = this->server.getRoot();
         std::string uri = this->uri_target;
 
         this->resolveLocation(root, uri, 0);
+
     } catch (const std::exception& e) {
         this->sendErrorCode(e.what());
         std::cout << "-> " << e.what() << std::endl;

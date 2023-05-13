@@ -1,7 +1,7 @@
 #include "libwebserv.hpp"
 
-using std::cout;
 using std::cerr;
+using std::cout;
 using std::endl;
 
 void printStartUpMessage(void) {
