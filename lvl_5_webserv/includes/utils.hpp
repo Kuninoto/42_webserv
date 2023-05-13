@@ -16,6 +16,7 @@
 
 std::vector<std::string> splitStr(const std::string& s, char delimiter);
 void trimStr(std::string& str, const char* set);
+std::istream& getNextLine(std::istream& ss, std::string& line);
 bool endsWith(const std::string& fullString, const std::string& ending);
 
 template <typename T>

@@ -16,8 +16,9 @@ std::string getHeaderValue(const std::string& str, const std::string& headerName
 // !TODO
 // filename is not being getted properly
 std::string getFilename(const std::string& line) {
-    size_t pos = line.find("filename=") + 9;
-    std::string filename = line.substr(pos, line.find(pos, '"') + 1);
+    size_t pos = line.find("filename=") + 10;
+    std::string filename = line.substr(pos, line.find('\r', pos) - 1);
+    trimStr(filename, "\"\r\n");
     return filename;
 }
 
@@ -31,22 +32,24 @@ void processUploadedFile(const std::string& filePart, const std::string& boundar
 
     // skip boundary
     std::getline(filePartStream, line, '\n');
-    std::getline(filePartStream, line, '\r');
 
+    std::getline(filePartStream, line, '\n');
     std::cout << "FILENAME = " << getFilename(line) << std::endl;
 
     std::ofstream uploadedFile(getFilename(line).c_str(), std::ofstream::out | std::ofstream::binary);
 
     std::getline(filePartStream, line, '\n');
-    size_t pos = line.find("Content-Type:");
-    contentType = filePart.substr(pos);
+    contentType = line.substr(line.find("Content-Type:") + 14);
 
+    // consume content_type
+    std::getline(filePartStream, line, '\n');
     std::cout << "CONTENT_TYPE = " << contentType << std::endl;
 
-    while (std::getline(filePartStream, line, '\r')) {
-        uploadedFile.write(line.c_str(), line.length());
-        if (line == boundary) {
+    while (getNextLine(filePartStream, line)) {
+        if (line.find("--" + boundary) != std::string::npos) {
             break;
         }
+        uploadedFile.write(line.c_str(), line.length());
     }
+    uploadedFile.close();
 }

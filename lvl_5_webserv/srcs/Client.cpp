@@ -16,6 +16,7 @@ void Client::setRequest(std::string request) {
 
 void Client::parseRequest(void) {
     this->request_content.clear();
+    this->headers.clear();
     std::string line;
     std::stringstream ss(this->request);
     std::vector<std::string> components;
@@ -24,7 +25,6 @@ void Client::parseRequest(void) {
     components = splitStr(line, ' ');
     if (components.size() != 3)
         throw ClientException(RS400);
-
     // Set the method of the request if it's a valid one (GET, POST, or DELETE)
     if (components.at(0) == "GET" || components.at(0) == "POST" || components.at(0) == "DELETE")
         this->method = components.at(0);
@@ -65,13 +65,14 @@ void Client::parseRequest(void) {
 
     // Read the rest of the request content
     // GET requests can also have query strings
-    while (std::getline(ss, line))
+    while (getNextLine(ss, line)) {
         this->request_content += line;
+    }
 }
 
 void Client::handleGetRequest(std::string& root, std::string& uri) {
     if (uri == "/favicon.ico") {
-        sendResponse("pages/favicon.png");
+        sendResponse("pages/favicon.ico");
         return;
     }
 
@@ -85,39 +86,26 @@ void Client::handleGetRequest(std::string& root, std::string& uri) {
 void Client::handlePostRequest(std::string& root, std::string& uri, const location_t& targetLocation) {
     std::string response;
 
-    // std::cout << "AT POST:" << std::endl;
-    // std::cout << "REQUEST: " << this->request << std::endl;
-
     try {
-        if (uri == "/upload") {
+        if (uri == "/upload" || uri == "/cgi-bin") {
             std::cout << "UPLOAD" << std::endl;
             //! TODO
-            // 400 (?)
-            if (this->headers.count("Content-Type") == 0) {
-                throw ClientException(RS400);
-            }
-            std::string content_type = this->headers["Content-Type"];
-            std::string boundary = content_type.substr(content_type.find("boundary=") + 9);
-
-            processUploadedFile(request.substr(request.find(boundary, request.find(boundary) + boundary.length())), boundary);
-            response = getHTMLBoilerPlate(RS200, "OK", "200 OK");
-        }
-
-        //! TODO
-        // if the target location doesn't have a CGI configured
-        else if (targetLocation.hasCGI) {
-            // 400 (?)
+            // put this dynamic
+            this->headers["Content-Type"] = "multipart/form-data";
+            createEnvVars(root, uri, targetLocation, true);
+            CGI cgi(".py");
+        } else if (targetLocation.hasCGI) {
             if (uri.find(targetLocation.cgi_path) == std::string::npos) {
                 throw ClientException(RS400);
             }
-            createEnvVars(uri);
-            CGI cgi(root + targetLocation.cgi_path + uri.erase(0, 1).substr(uri.find_last_of("/")), targetLocation.cgi_ext);
-            response = getHTMLBoilerPlate(RS200, "OK", getFileContent(".cgi_output"));
+            createEnvVars(root, uri, targetLocation, false);
+            CGI cgi(targetLocation.cgi_ext);
         } else {
-            // POST that isnt an upload neither for CGI
+            // POST that isn't an upload neither for CGI
             // 400 ?
             throw ClientException(RS400);
         }
+        response = getHTMLBoilerPlate(RS200, "OK", getFileContent(".cgi_output"));
         write(this->fd, response.c_str(), response.length());
         logMessage(this->method + " " + uri + GREEN + " -> 200 OK");
     } catch (const std::exception& e) {
@@ -143,20 +131,23 @@ void Client::handleDeleteRequest(std::string& root, std::string& uri) {
     }
 }
 
-void Client::createEnvVars(std::string uri) {
-    //! TODO
-    // Review/Research this info
-    // PATH_INFO saves the rest of the url past the CGI
-    // example: cgi-bin/process_form.py/yada
-    // PATH_INFO = yada
-    setenv("PATH_INFO", uri.erase(0, 1).substr(uri.find_first_of("/")).c_str(), 1);
-    std::cout << "PATH_INFO = " << getenv("PATH_INFO") << std::endl;
+void Client::createEnvVars(const std::string& serverRoot, std::string uri, const location_t& targetLocation, bool upload) {
+    if (upload) {
+        setenv("SCRIPT_FILENAME", "cgi-bin/upload_cgi.py", 1);
+    } else {
+        setenv("SCRIPT_FILENAME", (serverRoot + targetLocation.cgi_path + uri.erase(0, 1)).c_str(), 1);
+        setenv("QUERY_STRING", request_content.c_str(), 1);
+        std::cout << "QUERY_STRING = " << getenv("QUERY_STRING") << std::endl;
+    }
+    std::cout << "SCRIPT_FILENAME = " << getenv("SCRIPT_FILENAME") << std::endl;
 
-    setenv("QUERY_STRING", request_content.c_str(), 1);
-    std::cout << "QUERY_STRING = " << getenv("QUERY_STRING") << std::endl;
+    setenv("REQUEST_METHOD", "POST", 1);
 
     setenv("CONTENT_LENGTH", headers["Content-Length"].c_str(), 1);
+    std::cout << "CONTENT_LENGTH = " << getenv("CONTENT_LENGTH") << std::endl;
+
     setenv("CONTENT_TYPE", headers["Content-Type"].c_str(), 1);
+    std::cout << "CONTENT_TYPE = " << getenv("CONTENT_TYPE") << std::endl;
 }
 
 void Client::sendDirectoryListing(std::string uri) {
