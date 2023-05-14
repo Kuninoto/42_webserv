@@ -39,8 +39,9 @@ class Lexer {
     };
 
    private:
+    int brackets;
     bool has_server;
-    size_t line_nr;
+    size_t lineNr;
     std::ifstream file;
     char current_char;
     void consumeWhiteSpace(void);

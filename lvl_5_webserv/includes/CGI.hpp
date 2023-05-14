@@ -19,7 +19,7 @@ class Lexer;
 
 class CGI {
    public:
-    CGI(const std::string& cgi_ext);
+    CGI(const std::string& cgi_ext, const std::string& request);
     ~CGI(void);
 
     std::string response;
@@ -28,11 +28,11 @@ class CGI {
     void runCGI(void);
     void runScript(void);
     void createArgs(void);
-    void parseQueryString(void);
     void getEnvVars(void);
     void checkVars(void);
 
     char** args;
+    const std::string& request;
     std::string cgi_path;
     std::string cgi_ext;
     std::vector<std::string> params;

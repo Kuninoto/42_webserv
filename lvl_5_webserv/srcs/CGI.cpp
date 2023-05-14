@@ -8,7 +8,11 @@
 using std::cout;
 using std::endl;
 
-CGI::CGI(const std::string& cgi_ext) {
+#define WRITE_END 1
+#define READ_END 0
+
+CGI::CGI(const std::string& cgi_ext, const std::string& request)
+: request(request) {
     cout << "RUNNING CGI" << endl;
     this->cgi_path = std::string(getenv("SCRIPT_FILENAME"));
     this->cgi_ext = cgi_ext;
@@ -61,14 +65,10 @@ void CGI::getEnvVars(void) {
  * @return false
  */
 void CGI::checkVars(void) {
-    // if (method == "POST") {
-    if (envVars["QUERY_STRING"].empty())
-        throw CGIException("QUERY_STRING variable missing");
     if (envVars["CONTENT_LENGTH"].empty())
         throw CGIException("CONTENT_LENGTH variable missing");
     if (envVars["CONTENT_TYPE"].empty())
         throw CGIException("CONTENT_TYPE variable missing");
-    //}
 }
 
 /**
@@ -87,13 +87,24 @@ void CGI::runScript(void) {
     if (outputFd == -1)
         throw CGIException("open() failed");
 
+    int pipedes[2];
+    pipe(pipedes);
+
+    write(pipedes[WRITE_END], this->request.c_str(), this->request.length());
+
     pid = fork();
     if (pid == -1)
         throw CGIException("fork() failed");
     // child
     if (pid == 0) {
+        close(pipedes[WRITE_END]);
+
+        dup2(pipedes[READ_END], STDIN_FILENO);
+        close(pipedes[READ_END]);
+
         dup2(outputFd, STDOUT_FILENO);
         close(outputFd);
+
         createArgs();
         if (execve(runner.c_str(), args, NULL) == -1)
             throw CGIException("execve() failed");
@@ -103,6 +114,8 @@ void CGI::runScript(void) {
         while (waitpid(pid, &status, 0) == -1)
             ;
         close(outputFd);
+        close(pipedes[WRITE_END]);
+        close(pipedes[READ_END]);
     }
 }
 
