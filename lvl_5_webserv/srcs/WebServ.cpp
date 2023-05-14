@@ -238,6 +238,9 @@ static locationPair parseLocation(const std::map<std::string, std::string>& lexe
         newLocation.cgi_ext = lexerParameters.find("cgi_ext")->second;
     } else
         newLocation.hasCGI = false;
+    if (lexerParameters.count("upload_to") > 0)
+        newLocation.uploadTo = lexerParameters.find("upload_to")->second; 
+
     trimStr(locationPath, " ");
     return std::make_pair<std::string, location_t>(locationPath, newLocation);
 }
@@ -260,8 +263,6 @@ std::vector<Server> WebServ::parseConfigFile(const std::string& filename) {
         while (true) {
             if (token.value == "server") {
                 token = lexer.nextToken();
-                if (token.type != LEFT_CURLY_BRACKET)
-                    throw WebServ::ParserException("no opening bracket for server");
             }
 
             if (token.type == LEFT_CURLY_BRACKET) {
@@ -288,9 +289,6 @@ std::vector<Server> WebServ::parseConfigFile(const std::string& filename) {
             }
             token = lexer.nextToken();
         }
-
-        if (curly_brackets != 0)
-            throw WebServ::ParserException("Unclosed curly brackets");
         token = lexer.nextToken();
     }
     return servers;
