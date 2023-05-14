@@ -88,7 +88,8 @@ void CGI::runScript(void) {
         throw CGIException("open() failed");
 
     int pipedes[2];
-    pipe(pipedes);
+    if (pipe(pipedes) == -1)
+        throw CGIException("pipe() failed");
 
     write(pipedes[WRITE_END], this->request.c_str(), this->request.length());
 

@@ -8,14 +8,11 @@
 #include <unistd.h>
 
 #include <cstdlib>
-#include <iostream>
 #include <map>
 #include <string>
 #include <vector>
 
 #include "libwebserv.hpp"
-
-class Lexer;
 
 class CGI {
    public:
@@ -42,15 +39,12 @@ class CGI {
 
 class CGIException : public std::exception {
    public:
-    CGIException(const std::string error) throw() { message = new std::string(error); };
-    virtual ~CGIException() throw() { delete message; }
-
+    std::string message;
+    CGIException(std::string message) : message("CGI error: " + message) {};
+    ~CGIException() throw() {};
     virtual const char* what() const throw() {
-        return message->c_str();
+        return message.c_str();
     };
-
-   private:
-    const std::string* message;
 };
 
 #endif  // CGI_HPP

@@ -10,10 +10,11 @@ bool isValidKeyword(const std::string& value) {
     static const std::string keywords[16] = {"server", "listen", "host", "index",
                                              "server_name", "root", "error_page",
                                              "location", "client_max_body_size",
-                                             "cgi_path", "cgi_ext", "auto_index",
-                                             "allow_methods", "return", "try_file"};
+                                             "cgi_path", "cgi_ext", "upload_to",
+                                             "auto_index", "allow_methods",
+                                             "return", "try_file"};
 
-    for (size_t i = 0; i < 16; i += 1) {
+    for (size_t i = 0; i < 17; i += 1) {
         if (value == keywords[i]) {
             return true;
         }
@@ -113,7 +114,7 @@ void Lexer::consumeKeyword(std::string& token_value) {
         this->has_server = true;
         return;
     }
-    // Check for parameters
+    // Check for values
     if (current_char == ' ') {
         consumeWhiteSpace();
         if (current_char == ';')
@@ -125,6 +126,8 @@ void Lexer::consumeKeyword(std::string& token_value) {
                     throw LexerException("line " + ft_ntos(this->lineNr) + ": missing '{'");
                 parameter_value += current_char;
                 current_char = this->file.get();
+                if (current_char == '{')
+                    this->brackets += 1;
             }
             if (parameter_value.empty() || isOnlyWhiteSpaces(parameter_value))
                 throw LexerException("line " + ft_ntos(this->lineNr) + ": no value found for keyword \"" + token_value + "\"");

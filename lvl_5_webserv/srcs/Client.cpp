@@ -86,33 +86,51 @@ void Client::handleGetRequest(std::string& root, std::string& uri) {
 void Client::handlePostRequest(std::string& root, std::string& uri, const location_t& targetLocation) {
     std::string response;
 
-    try {
-        if (uri == "/upload" || uri == "/cgi-bin") {
-            std::cout << "UPLOAD" << std::endl;
-            //! TODO
-            // put this dynamic
-            this->headers["Content-Type"] = "multipart/form-data";
-            createEnvVars(root, uri, targetLocation, true);
+    //!TODO
+    // this if should recognize by the uri if the POST is a file upload 
+    if (uri == "/upload" || uri == "/cgi-bin") {
+
+        //!TODO
+        // when "/" is not a location dereferencing targetLocation segfaults
+        //if (targetLocation.uploadTo.empty()) {
+        //    throw ClientException(RS405);
+        //}
+
+        std::cout << "UPLOAD" << std::endl;
+        //! TODO
+        // put this dynamic
+        this->headers["Content-Type"] = "multipart/form-data";
+        createEnvVars(root, uri, targetLocation, true);
+        try {
             CGI cgi(".py", this->request);
-        } else if (targetLocation.hasCGI) {
-            if (uri.find(targetLocation.cgi_path) == std::string::npos) {
-                throw ClientException(RS400);
-            }
-            createEnvVars(root, uri, targetLocation, false);
-            CGI cgi(targetLocation.cgi_ext, this->request);
-        } else {
-            // POST that isn't an upload neither for CGI
-            // 400 ?
-            throw ClientException(RS400);
+
+            response = getHTMLBoilerPlate(RS200, "OK", getFileContent(".cgi_output"));
+            write(this->fd, response.c_str(), response.length());
+            logMessage(this->method + " " + uri + GREEN + " -> 200 OK");
+        } catch (const std::exception& e) {
+            response = getHTMLBoilerPlate(RS500, "Internal Server Error", "500 Internal Server Error");
+            write(this->fd, response.c_str(), response.length());
+            logMessage(this->method + " " + uri + RED + " -> 500 Internal Server Error");
+            std::cerr << e.what() << '\n';
         }
-        response = getHTMLBoilerPlate(RS200, "OK", getFileContent(".cgi_output"));
-        write(this->fd, response.c_str(), response.length());
-        logMessage(this->method + " " + uri + GREEN + " -> 200 OK");
-    } catch (const std::exception& e) {
-        response = server.getErrorResponse();
-        write(this->fd, response.c_str(), response.length());
-        logMessage(this->method + " " + uri + RED + " -> 404 Not Found");
-        std::cerr << "CGI Error: " << e.what() << '\n';
+    }
+    else if (targetLocation.hasCGI) {
+        if (uri.find(targetLocation.cgi_path) == std::string::npos) {
+                throw ClientException(RS405);
+        }
+        createEnvVars(root, uri, targetLocation, false);
+        try {
+            CGI cgi(targetLocation.cgi_ext, this->request);
+
+            response = getHTMLBoilerPlate(RS200, "OK", getFileContent(".cgi_output"));
+            write(this->fd, response.c_str(), response.length());
+            logMessage(this->method + " " + uri + GREEN + " -> 200 OK");
+        } catch (const std::exception& e) {
+            response = getHTMLBoilerPlate(RS500, "Internal Server Error", "500 Internal Server Error");
+            write(this->fd, response.c_str(), response.length());
+            logMessage(this->method + " " + uri + RED + " -> 500 Internal Server Error");
+            std::cerr << e.what() << '\n';
+        }
     }
 }
 
@@ -141,13 +159,16 @@ void Client::createEnvVars(const std::string& serverRoot, std::string uri, const
     }
     std::cout << "SCRIPT_FILENAME = " << getenv("SCRIPT_FILENAME") << std::endl;
 
-    setenv("REQUEST_METHOD", "POST", 1);
-
     setenv("CONTENT_LENGTH", headers["Content-Length"].c_str(), 1);
     std::cout << "CONTENT_LENGTH = " << getenv("CONTENT_LENGTH") << std::endl;
 
     setenv("CONTENT_TYPE", headers["Content-Type"].c_str(), 1);
     std::cout << "CONTENT_TYPE = " << getenv("CONTENT_TYPE") << std::endl;
+
+    setenv("GATEWAY_INTERFACE", "CGI/1.1", 1);
+    setenv("REQUEST_METHOD", "POST", 1);
+    setenv("SERVER_PROTOCOL", "HTTP/1.1", 1);
+	setenv("SERVER_SOFTWARE", "42_Webserv", 1);
 }
 
 void Client::sendDirectoryListing(std::string uri) {

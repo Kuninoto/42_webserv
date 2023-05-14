@@ -31,8 +31,8 @@ class Lexer {
     class LexerException : public std::exception {
        public:
         std::string message;
-        LexerException(std::string message) : message("config file: " + message){};
-        ~LexerException() throw(){};
+        LexerException(std::string message) : message("config file: " + message) {};
+        ~LexerException() throw() {};
         virtual const char* what() const throw() {
             return message.c_str();
         };
