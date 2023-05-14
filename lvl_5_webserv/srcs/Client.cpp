@@ -52,9 +52,10 @@ void Client::parseRequest(void) {
             std::string content(line.substr(line.find(':') + 2, line.find('\n')));
 
             // If the content of the header is not empty, add it to the headers map
-            if (content.length() != 0)
+            if (content.length() != 0) {
+                trimStr(content, "\r\n");
                 this->headers[name] = content;
-            else
+            } else
                 // If the content of the header is empty
                 // send Bad Request
                 throw ClientException(RS400);
@@ -86,13 +87,12 @@ void Client::handleGetRequest(std::string& root, std::string& uri) {
 void Client::handlePostRequest(std::string& root, std::string& uri, const location_t& targetLocation) {
     std::string response;
 
-    //!TODO
-    // this if should recognize by the uri if the POST is a file upload 
+    //! TODO
+    // this if should recognize by the uri if the POST is a file upload
     if (uri == "/upload" || uri == "/cgi-bin") {
-
-        //!TODO
+        //! TODO
         // when "/" is not a location dereferencing targetLocation segfaults
-        //if (targetLocation.uploadTo.empty()) {
+        // if (targetLocation.uploadTo.empty()) {
         //    throw ClientException(RS405);
         //}
 
@@ -100,9 +100,8 @@ void Client::handlePostRequest(std::string& root, std::string& uri, const locati
         //! TODO
         // put this dynamic
         this->headers["Content-Type"] = "multipart/form-data";
-        createEnvVars(root, uri, targetLocation, true);
         try {
-            CGI cgi(".py", this->request);
+            CGI cgi(".py", this->request, createEnvVars(root, uri, targetLocation, true));
 
             response = getHTMLBoilerPlate(RS200, "OK", getFileContent(".cgi_output"));
             write(this->fd, response.c_str(), response.length());
@@ -113,14 +112,12 @@ void Client::handlePostRequest(std::string& root, std::string& uri, const locati
             logMessage(this->method + " " + uri + RED + " -> 500 Internal Server Error");
             std::cerr << e.what() << '\n';
         }
-    }
-    else if (targetLocation.hasCGI) {
+    } else if (targetLocation.hasCGI) {
         if (uri.find(targetLocation.cgi_path) == std::string::npos) {
-                throw ClientException(RS405);
+            throw ClientException(RS405);
         }
-        createEnvVars(root, uri, targetLocation, false);
         try {
-            CGI cgi(targetLocation.cgi_ext, this->request);
+            CGI cgi(targetLocation.cgi_ext, this->request, createEnvVars(root, uri, targetLocation, false));
 
             response = getHTMLBoilerPlate(RS200, "OK", getFileContent(".cgi_output"));
             write(this->fd, response.c_str(), response.length());
@@ -149,26 +146,32 @@ void Client::handleDeleteRequest(std::string& root, std::string& uri) {
     }
 }
 
-void Client::createEnvVars(const std::string& serverRoot, std::string uri, const location_t& targetLocation, bool upload) {
+std::vector<std::string> Client::createEnvVars(const std::string& serverRoot, std::string uri, const location_t& targetLocation, bool upload) {
+    std::vector<std::string> envVars;
+
     if (upload) {
-        setenv("SCRIPT_FILENAME", "cgi-bin/upload_cgi.py", 1);
+        envVars.push_back("SCRIPT_FILENAME=cgi-bin/upload_cgi.py");
     } else {
-        setenv("SCRIPT_FILENAME", (serverRoot + targetLocation.cgi_path + uri.erase(0, 1)).c_str(), 1);
-        setenv("QUERY_STRING", request_content.c_str(), 1);
-        std::cout << "QUERY_STRING = " << getenv("QUERY_STRING") << std::endl;
+        envVars.push_back("SCRIPT_FILENAME=" + (serverRoot + targetLocation.cgi_path + uri.erase(0, 1)));
+        //! TODO
+        // QUERY STRING IS ONLY APPLIED WHEN POST HAVE IN FACT QUERIES
+        // (?)
+        // envVars.push_back("QUERY_STRING=" + headers[request_content]);
+        // std::cout << "QUERY_STRING = " << getenv("QUERY_STRING") << std::endl;
     }
-    std::cout << "SCRIPT_FILENAME = " << getenv("SCRIPT_FILENAME") << std::endl;
 
-    setenv("CONTENT_LENGTH", headers["Content-Length"].c_str(), 1);
-    std::cout << "CONTENT_LENGTH = " << getenv("CONTENT_LENGTH") << std::endl;
+    envVars.push_back("CONTENT_LENGTH=" + headers["Content-Length"]);
 
-    setenv("CONTENT_TYPE", headers["Content-Type"].c_str(), 1);
-    std::cout << "CONTENT_TYPE = " << getenv("CONTENT_TYPE") << std::endl;
+    envVars.push_back("CONTENT_TYPE=" + headers["Content-Type"]);
 
-    setenv("GATEWAY_INTERFACE", "CGI/1.1", 1);
-    setenv("REQUEST_METHOD", "POST", 1);
-    setenv("SERVER_PROTOCOL", "HTTP/1.1", 1);
-	setenv("SERVER_SOFTWARE", "42_Webserv", 1);
+    envVars.push_back("GATEWAY_INTERFACE=CGI/1.1");
+    //! TODO
+    // always POST?
+    envVars.push_back("REQUEST_METHOD=POST");
+    envVars.push_back("SERVER_PROTOCOL=HTTP/1.1");
+    envVars.push_back("SERVER_SOFTWARE=42_Webserv");
+
+    return envVars;
 }
 
 void Client::sendDirectoryListing(std::string uri) {

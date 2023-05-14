@@ -3,10 +3,12 @@
 import cgi
 import os
 import cgitb
-import sys
 
-for line in sys.stdin:
-   print(line)
+# DEBUG
+
+#import sys
+# for line in sys.stdin:
+#   print(line)
 
 UPLOAD_DIR = "/upload"
 
@@ -14,7 +16,7 @@ cgitb.enable()
 form = cgi.FieldStorage()
 
 # Get filename here
-fileitem = form['filename']
+fileitem = form['fileTest']
 
 # Test if the file was uploaded
 if fileitem.filename:
