@@ -93,13 +93,13 @@ void Client::handlePostRequest(std::string& root, std::string& uri, const locati
             // put this dynamic
             this->headers["Content-Type"] = "multipart/form-data";
             createEnvVars(root, uri, targetLocation, true);
-            CGI cgi(".py");
+            CGI cgi(".py", this->request);
         } else if (targetLocation.hasCGI) {
             if (uri.find(targetLocation.cgi_path) == std::string::npos) {
                 throw ClientException(RS400);
             }
             createEnvVars(root, uri, targetLocation, false);
-            CGI cgi(targetLocation.cgi_ext);
+            CGI cgi(targetLocation.cgi_ext, this->request);
         } else {
             // POST that isn't an upload neither for CGI
             // 400 ?

@@ -3,7 +3,10 @@
 import cgi
 import os
 import cgitb
-cgitb.enable()
+import sys
+
+for line in sys.stdin:
+   print(line)
 
 UPLOAD_DIR = "/upload"
 
