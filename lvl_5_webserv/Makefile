@@ -9,6 +9,7 @@ GENERAL = Lexer CGI Server Client WebServ
 
 NAME = webserv
 TEST_CONFIG_FILE = config/reggin.conf
+CRASH_CONFIG_FILE = config/crash.conf
 
 SRCS = $(addsuffix .cpp, $(UTILS))\
 	   $(addsuffix .cpp, $(GENERAL))\
