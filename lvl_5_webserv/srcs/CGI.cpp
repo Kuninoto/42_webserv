@@ -5,16 +5,32 @@
 #include <iostream>
 #include <sstream>
 
+#include "utils.hpp"
+
 using std::cout;
 using std::endl;
 
 #define WRITE_END 1
 #define READ_END 0
 
-CGI::CGI(const std::string& cgi_ext, const std::string& request)
-: request(request) {
+static std::string getScriptFileName(const std::vector<std::string> envVars) {
+    std::vector<std::string>::const_iterator v_it;
+
+    for (v_it = envVars.begin(); v_it != envVars.end(); v_it++) {
+        size_t pos = v_it->find("SCRIPT_FILENAME=");
+        if (pos != std::string::npos) {
+            return v_it->substr(pos + 16);
+        }
+    }
+    return "";
+};
+
+CGI::CGI(const std::string& cgi_ext, const std::string& request, const std::vector<std::string>& envVars)
+    : request(request) {
     cout << "RUNNING CGI" << endl;
-    this->cgi_path = std::string(getenv("SCRIPT_FILENAME"));
+    this->cgi_path = getScriptFileName(envVars);
+    if (cgi_path.empty())
+        throw CGIException("No SCRIPT_FILENAME provided");
     this->cgi_ext = cgi_ext;
     cout << "CGI PATH: " << this->cgi_path << endl;
     cout << "CGI Ext: " << this->cgi_ext << endl;
@@ -26,49 +42,22 @@ CGI::CGI(const std::string& cgi_ext, const std::string& request)
     std::string ext = cgi_path.substr(dotPos);
     if (ext != cgi_ext)
         throw CGIException("Invalid extension \"" + ext + "\" expected \"" + cgi_ext + "\"");
-    this->runCGI();
+
+    if (access(this->cgi_path.c_str(), F_OK) != 0)
+        throw CGIException("Invalid CGI file");
+    this->createArgvAndEnvp(envVars);
+    this->runScript();
 }
 
 CGI::~CGI(void) {
     // remove(".cgi_output");
-    for (size_t i = 0; this->args[i]; i += 1)
-        free(this->args[i]);
-    delete[] this->args;
-}
+    for (size_t i = 0; this->argv[i]; i += 1)
+        free(this->argv[i]);
+    delete[] this->argv;
 
-void CGI::runCGI(void) {
-    this->getEnvVars();
-    this->checkVars();
-    if (access(this->cgi_path.c_str(), F_OK) != 0)
-        throw CGIException("Invalid CGI file");
-    this->createArgs();
-    this->runScript();
-}
-
-/**
- * @brief Gets the environment variables and checks if all obligatory ones are present
- *
- * @return true if everything is good
- * @return false if an obligatory variable is missing
- */
-void CGI::getEnvVars(void) {
-    envVars["QUERY_STRING"] = getenv("QUERY_STRING") ? getenv("QUERY_STRING") : "";
-    envVars["CONTENT_LENGTH"] = getenv("CONTENT_LENGTH") ? getenv("CONTENT_LENGTH") : "";
-    envVars["CONTENT_TYPE"] = getenv("CONTENT_TYPE") ? getenv("CONTENT_TYPE") : "";
-}
-
-/**
- * @brief checks if all variables are present for the request type
- *
- * @param method either GET, POST or DELETE
- * @return true
- * @return false
- */
-void CGI::checkVars(void) {
-    if (envVars["CONTENT_LENGTH"].empty())
-        throw CGIException("CONTENT_LENGTH variable missing");
-    if (envVars["CONTENT_TYPE"].empty())
-        throw CGIException("CONTENT_TYPE variable missing");
+    for (size_t i = 0; this->envp[i]; i += 1)
+        free(this->envp[i]);
+    delete[] this->envp;
 }
 
 /**
@@ -79,8 +68,8 @@ void CGI::runScript(void) {
 
     std::cout << "RUNNER = " << runner << std::endl;
     std::cout << "ARGS = ";
-    for (size_t i = 0; args[i]; i += 1)
-        std::cout << args[i] << " ";
+    for (size_t i = 0; argv[i]; i += 1)
+        std::cout << argv[i] << " ";
     std::cout << std::endl;
 
     int outputFd = open(".cgi_output", O_CREAT | O_WRONLY | O_TRUNC, 0644);
@@ -91,6 +80,8 @@ void CGI::runScript(void) {
     if (pipe(pipedes) == -1)
         throw CGIException("pipe() failed");
 
+    //! TODO
+    // something is wrong with the boundary
     write(pipedes[WRITE_END], this->request.c_str(), this->request.length());
 
     pid = fork();
@@ -106,8 +97,7 @@ void CGI::runScript(void) {
         dup2(outputFd, STDOUT_FILENO);
         close(outputFd);
 
-        createArgs();
-        if (execve(runner.c_str(), args, NULL) == -1)
+        if (execve(runner.c_str(), this->argv, this->envp) == -1)
             throw CGIException("execve() failed");
     } else {
         int status;
@@ -120,30 +110,30 @@ void CGI::runScript(void) {
     }
 }
 
-void CGI::createArgs(void) {
-    int i = 2;
-
+void CGI::createArgvAndEnvp(const std::vector<std::string>& envVars) {
     if (cgi_ext == ".py") {
         runner = "/usr/bin/python3";
-        args = new char*[3 + params.size()];
-        args[0] = strdup("python3");
-        args[1] = strdup(this->cgi_path.c_str());
-        // for (size_t param = 0; param < params.size(); param += 1) {
-        //     args[i] = strdup(params[param].c_str());
-        //     i += 1;
-        // }
-        args[i] = NULL;
+        argv = new char*[3];
+        argv[0] = strdup("python3");
+        argv[1] = strdup(this->cgi_path.c_str());
+        argv[2] = NULL;
     }
 
-    else if (cgi_ext == ".php") {
-        runner = "/usr/bin/php";
-        args = new char*[3 + params.size()];
-        args[0] = strdup("php");
-        args[1] = strdup(this->cgi_path.c_str());
-        // for (size_t param = 0; param < params.size(); param += 1) {
-        //     args[i] = strdup(params[param].c_str());
-        //     i += 1;
-        // }
-        args[i] = NULL;
+    this->envp = new char*[envVars.size() + 1];
+
+    size_t i = 0;
+    std::vector<std::string>::const_iterator v_it;
+    for (v_it = envVars.begin(); v_it != envVars.end(); v_it++, i++) {
+        this->envp[i] = strdup(v_it->c_str());
+        std::cout << "envp[" << i << "] = " << envp[i] << std::endl;
     }
+    this->envp[i] = NULL;
+
+    // else if (cgi_ext == ".php") {
+    //     runner = "/usr/bin/php";
+    //     argv = new char*[3 + params.size()];
+    //     argv[0] = strdup("php");
+    //     argv[1] = strdup(this->cgi_path.c_str());
+    //     argv[2] = NULL;
+    // }
 }
