@@ -10,7 +10,14 @@ Review CGI
 - Does CGI handle GET and DELETE?
 - process_form is not parsing QUERY_STRING properly
 
+----------------------------------------------------
 can DELETE delete a directory?
+
+Yes, DELETE can delete a directory, but it depends on how the server is implemented. According to the HTTP/1.1 specification, the DELETE method is used to delete a resource identified by a URI. The specification does not differentiate between a file or a directory.
+
+However, some web servers may choose to restrict the use of the DELETE method to only delete individual files, or they may choose to allow the deletion of directories and all their contents with the DELETE method.
+
+----------------------------------------------------
 
 review chunked transfer
 https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/411
