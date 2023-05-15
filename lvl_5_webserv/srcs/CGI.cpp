@@ -72,6 +72,7 @@ void CGI::runScript(void) {
 		std::cout << argv[i] << " ";
 	std::cout << std::endl;
 
+	// perhaps change to tmpfile()
 	int outputFd = open(".cgi_output", O_CREAT | O_WRONLY | O_TRUNC, 0644);
 	if (outputFd == -1)
 		throw CGIException("open() failed");
@@ -80,35 +81,18 @@ void CGI::runScript(void) {
 	if (pipe(pipedes) == -1)
 		throw CGIException("pipe() failed");
 
-	//! TODO
-	// something is wrong with the boundary
-	ssize_t n = write(pipedes[WRITE_END], this->request.data(), this->request.size());
-	if (n == -1)
-		throw CGIException("write() failed");
-
-	// close(pipedes[WRITE_END]);
-
-	// read from the pipe
-	char buf[1024];
-	n = read(pipedes[READ_END], buf, sizeof(buf));
-	if (n == -1) {
-		throw CGIException("read() failed");
-	}
-
-	cout << endl << "-----BUF read START-----" << std::endl;
-	cout << buf << std::endl;
-	cout << "-----BUF read END-----" << std::endl;
-
+	write(pipedes[WRITE_END], this->request.data(), this->request.size());
+	close(pipedes[WRITE_END]);
 
 	pid = fork();
 	if (pid == -1)
 		throw CGIException("fork() failed");
+
 	// child
 	if (pid == 0) {
-		close(pipedes[WRITE_END]);
-
 		dup2(pipedes[READ_END], STDIN_FILENO);
 		close(pipedes[READ_END]);
+
 
 		dup2(outputFd, STDOUT_FILENO);
 		close(outputFd);
@@ -117,11 +101,8 @@ void CGI::runScript(void) {
 			throw CGIException("execve() failed");
 	} else {
 		int status;
-
-		while (waitpid(pid, &status, 0) == -1)
-			;
+		waitpid(pid, &status, 0);
 		close(outputFd);
-		close(pipedes[WRITE_END]);
 		close(pipedes[READ_END]);
 	}
 }
@@ -144,12 +125,4 @@ void CGI::createArgvAndEnvp(const std::vector<std::string>& envVars) {
 		std::cout << "envp[" << i << "] = " << envp[i] << std::endl;
 	}
 	this->envp[i] = NULL;
-
-	// else if (cgi_ext == ".php") {
-	//     runner = "/usr/bin/php";
-	//     argv = new char*[3 + params.size()];
-	//     argv[0] = strdup("php");
-	//     argv[1] = strdup(this->cgi_path.c_str());
-	//     argv[2] = NULL;
-	// }
 }
