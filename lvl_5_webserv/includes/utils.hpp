@@ -14,10 +14,13 @@
 #define BLUE "\x1B[34m"
 #define PURPLE "\x1B[35m"
 
+std::istream& getNextLine(std::istream& ss, std::string& line);
+
 std::vector<std::string> splitStr(const std::string& s, char delimiter);
 void trimStr(std::string& str, const char* set);
-std::istream& getNextLine(std::istream& ss, std::string& line);
+
 bool endsWith(const std::string& fullString, const std::string& ending);
+bool isOnlyWhiteSpaces(const std::string& str);
 
 template <typename T>
 std::vector<T> sliceVec(std::vector<T>& vec, unsigned int start_idx, unsigned int end_idx);
@@ -32,10 +35,6 @@ std::string getFileType(const std::string& file);
 std::string getFileSize(const std::string& file);
 std::string getOkHeader(const std::string& file);
 std::string getHTMLBoilerPlate(const std::string& code, const std::string& title, const std::string& body);
-
-std::string getFilename(const std::string& contentDisposition);
-
-void processUploadedFile(const std::string& filePart, const std::string& boundary);
 
 static inline void logMessage(const std::string& message) {
     std::cout << BLUE << "[" << getTime() << "] " << RESET << message << RESET << std::endl;

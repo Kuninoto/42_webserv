@@ -6,6 +6,7 @@
 
 #include <fstream>
 #include <sstream>
+#include <sys/socket.h>
 
 #include "WebServ.hpp"
 
@@ -34,7 +35,8 @@ static std::string parsePortNumber(const std::string& port_as_str) {
     unsigned long temp = strtoul(port_as_str.c_str(), NULL, 10);
     bool strtoul_success = (temp == UINT64_MAX && errno == ERANGE) ? false : true;
 
-    if (port_as_str.find_first_not_of("0123456789") != std::string::npos || !strtoul_success || temp > UINT16_MAX)
+    if (port_as_str.find_first_not_of("0123456789") != std::string::npos
+    || !strtoul_success || temp > UINT16_MAX)
         throw WebServ::ParserException("invalid port number \"" + port_as_str + "\"");
     return port_as_str;
 }

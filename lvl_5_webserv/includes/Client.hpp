@@ -20,6 +20,7 @@
 #define RS405 "405 Method Not Allowed"
 #define RS413 "413 Content Too Large"
 #define RS414 "414 URI Too Large"
+#define RS500 "500 Internal Server Error"
 #define RS501 "501 Not Implemented"
 #define RS505 "505 HTTP Version Not Supported"
 #define RS508 "508 Loop Detected"
@@ -69,6 +70,7 @@ class Client {
 
     bool request_sent;
 
+	std::vector<char> requestVector;
     std::string method;
     std::string request;
     std::string uri_target;
@@ -80,9 +82,9 @@ class Client {
     void sendDirectoryListing(std::string uri);
     void sendResponse(std::string uri);
     void sendErrorCode(std::string code);
-    void createEnvVars(const std::string& serverRoot, std::string uri, const location_t& targetLocation, bool upload);
     void handleGetRequest(std::string& root, std::string& uri);
     void handlePostRequest(std::string& root, std::string& uri, const location_t& targetLocation);
+    std::vector<std::string> createEnvVars(const std::string& serverRoot, std::string uri, const location_t& targetLocation, bool upload);
     void handleDeleteRequest(std::string& root, std::string& uri);
 };
 
