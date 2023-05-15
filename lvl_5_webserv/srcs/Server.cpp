@@ -49,10 +49,23 @@ Server::Server(std::map<std::string, std::string>& parameters) {
         "root",
         "index",
         "client_max_body_size"};
+    
+    const static std::string forbiddenKeyWords[] = {
+        "upload_to",
+        "cgi_path",
+        "cgi_ext",
+        "allow_methods",
+        "auto_index",
+        "try_file"};
 
     for (size_t i = 0; i < 6; i += 1) {
         if (parameters.count(mustHaveKeyWords[i]) == 0)
             throw WebServ::ParserException("no provided value for " + mustHaveKeyWords[i]);
+    }
+
+    for (size_t i = 0; i < 6; i += 1) {
+        if (parameters.count(forbiddenKeyWords[i]) > 0)
+            throw WebServ::ParserException("server block cannot have " + forbiddenKeyWords[i] + " directive");
     }
 
     this->port = parsePortNumber(parameters["listen"]);

@@ -41,16 +41,7 @@ class Client {
 
     std::map<std::string, std::string> headers;
 
-    template <typename K, typename V>
-    void printMap(const std::map<K, V>& myMap) {
-        std::cout << "-------------------------------" << std::endl;
-        std::cout << "Printing map contents:" << std::endl;
-
-        for (typename std::map<K, V>::const_iterator it = myMap.begin(); it != myMap.end(); ++it) {
-            std::cout << it->first << " : " << it->second << std::endl;
-        }
-        std::cout << "-------------------------------" << std::endl;
-    }
+    location_t genServerLocation(void);
 
     class ClientException : public std::exception {
        public:

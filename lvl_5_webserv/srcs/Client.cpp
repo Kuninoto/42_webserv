@@ -69,10 +69,11 @@ void Client::parseRequest(void) {
 	// checkHeaders()
 
 	// Read the rest of the request content
-	// GET requests can also have query strings
-	while (getNextLine(ss, line)) {
-		this->request_content += line;
+	while (std::getline(ss, line)) {
+		this->request_content.append(line);
 	}
+	if (request_content.length() > this->server.getMaxBodySize())
+		throw ClientException(RS413);
 }
 
 void Client::handleGetRequest(std::string& root, std::string& uri) {
@@ -91,54 +92,31 @@ void Client::handleGetRequest(std::string& root, std::string& uri) {
 void Client::handlePostRequest(std::string& root, std::string& uri, const location_t& targetLocation) {
 	std::string response;
 
-	std::cout << "Vector START" << std::endl;
-	for (std::vector<char>::size_type i = 0; i < requestVector.size(); ++i) {
+	/* std::cout << "Vector START" << std::endl;
+	for (size_t i = 0; i < requestVector.size(); i += 1) {
 		std::cout << requestVector[i];
 	}
 	std::cout << std::endl;
-	std::cout << "Vector END" << std::endl;
+	std::cout << "Vector END" << std::endl; */
 
+	if (targetLocation.uploadTo.empty() && !targetLocation.hasCGI) {
+	    throw ClientException(RS405);
+	}
+
+	std::cout << "UPLOAD" << std::endl;
 	//! TODO
-	// this if should recognize by the uri if the POST is a file upload
-	if (uri == "/upload" || uri == "/cgi-bin") {
-		//! TODO
-		// when "/" is not a location dereferencing targetLocation segfaults
-		// if (targetLocation.uploadTo.empty()) {
-		//    throw ClientException(RS405);
-		//}
-
-		std::cout << "UPLOAD" << std::endl;
-		//! TODO
-		// put this dynamic
-		this->headers["Content-Type"] = "multipart/form-data";
-		try {
-			CGI cgi(".py", this->requestVector, createEnvVars(root, uri, targetLocation, true));
-
-			response = getHTMLBoilerPlate(RS200, "OK", getFileContent(".cgi_output"));
-			write(this->fd, response.c_str(), response.length());
-			logMessage(this->method + " " + uri + GREEN + " -> 200 OK");
-		} catch (const std::exception& e) {
-			response = getHTMLBoilerPlate(RS500, "Internal Server Error", "500 Internal Server Error");
-			write(this->fd, response.c_str(), response.length());
-			logMessage(this->method + " " + uri + RED + " -> 500 Internal Server Error");
-			std::cerr << e.what() << '\n';
-		}
-	} else if (targetLocation.hasCGI) {
-		if (uri.find(targetLocation.cgi_path) == std::string::npos) {
-			throw ClientException(RS405);
-		}
-		try {
-			CGI cgi(targetLocation.cgi_ext, this->requestVector, createEnvVars(root, uri, targetLocation, false));
-
-			response = getHTMLBoilerPlate(RS200, "OK", getFileContent(".cgi_output"));
-			write(this->fd, response.c_str(), response.length());
-			logMessage(this->method + " " + uri + GREEN + " -> 200 OK");
-		} catch (const std::exception& e) {
-			response = getHTMLBoilerPlate(RS500, "Internal Server Error", "500 Internal Server Error");
-			write(this->fd, response.c_str(), response.length());
-			logMessage(this->method + " " + uri + RED + " -> 500 Internal Server Error");
-			std::cerr << e.what() << '\n';
-		}
+	// put this dynamic
+	// this->headers["Content-Type"] = "multipart/form-data;";
+	try {
+		CGI cgi(".py", this->requestVector, createEnvVars(root, uri, targetLocation, true));
+		response = getHTMLBoilerPlate(RS200, "OK", getFileContent(".cgi_output"));
+		write(this->fd, response.c_str(), response.length());
+		logMessage(this->method + " " + uri + GREEN + " -> 200 OK");
+	} catch (const std::exception& e) {
+		response = getHTMLBoilerPlate(RS500, "Internal Server Error", "500 Internal Server Error");
+		write(this->fd, response.c_str(), response.length());
+		logMessage(this->method + " " + uri + RED + " -> 500 Internal Server Error");
+		std::cerr << e.what() << '\n';
 	}
 }
 
@@ -171,14 +149,12 @@ std::vector<std::string> Client::createEnvVars(const std::string& serverRoot, st
 		// std::cout << "QUERY_STRING = " << getenv("QUERY_STRING") << std::endl;
 	}
 
-	envVars.push_back("CONTENT_LENGTH=" + headers["Content-Length"]);
+	envVars.push_back("CONTENT_LENGTH=-1");
 
-	envVars.push_back("CONTENT_TYPE=" + headers["Content-Type"]);
+	// envVars.push_back("CONTENT_TYPE=" + headers["Content-Type"]);
 
 	envVars.push_back("GATEWAY_INTERFACE=CGI/1.1");
-	//! TODO
-	// always POST?
-	envVars.push_back("REQUEST_METHOD=POST");
+	envVars.push_back("REQUEST_METHOD=" + this->method);
 	envVars.push_back("SERVER_PROTOCOL=HTTP/1.1");
 	envVars.push_back("SERVER_SOFTWARE=42_Webserv");
 
@@ -228,8 +204,7 @@ void Client::sendErrorCode(std::string code) {
 
 	body += "<div style='margin: auto; text-align: center;'>\n";
 	body += "\t<div style='font-size: 72px'>" + code + "</div>\n";
-	body += "\t<div style='margin: 1rem 0;'>Random ass picture:</div>\n";
-	body += "\t<img src='https://picsum.photos/200' alt='random ass'>\n";
+	body += "\t<img src='https://picsum.photos/200' alt='beautiful picture'>\n";
 	body += "</div>\n";
 	body += "<style>\n";
 	body += "\tbody {\n";
@@ -242,6 +217,11 @@ void Client::sendErrorCode(std::string code) {
 	write(this->fd, response.c_str(), response.length());
 
 	this->request.clear();
+}
+
+location_t Client::genServerLocation(void) {
+	location_t serverLocation =  {.root = this->server.getRoot()};
+	return serverLocation;
 }
 
 void Client::resolveLocation(std::string& root, std::string& uri, size_t safety_cap) {
@@ -267,9 +247,7 @@ void Client::resolveLocation(std::string& root, std::string& uri, size_t safety_
 
 		if (tempLocation->second.redirect.size()) {
 			uri.erase(locate, tempLocation->first.size())
-				.insert(locate, tempLocation->second.redirect);
-			//! TODO
-			// this->resolveResponse()?
+			   .insert(locate, tempLocation->second.redirect);
 			this->resolveLocation(root, uri, safety_cap);
 			return;
 		}
@@ -282,8 +260,11 @@ void Client::resolveLocation(std::string& root, std::string& uri, size_t safety_
 		if (isDirectory((root + uri).c_str())) {
 			if (tempLocation->second.try_file.size())
 				this->sendResponse(root + uri + "/" + tempLocation->second.try_file);
-			else if (tempLocation->second.auto_index)
+			else if (tempLocation->second.auto_index) {
+				std::cout << "a" << std::endl;
+				//TODO: FIX: localhost:8080/test is getting autoindex (it shouldn't)
 				this->sendDirectoryListing(root + uri.erase(0, 1));
+			}
 			else if (uri == "/")
 				this->sendResponse(root + server.getIndex());
 			else
@@ -291,7 +272,11 @@ void Client::resolveLocation(std::string& root, std::string& uri, size_t safety_
 			return;
 		}
 	}
-	this->resolveResponse(root, uri, targetLocation->second);
+	if (tempLocation == server.getLocations().end()) {
+		this->resolveResponse(root, uri, genServerLocation());
+	}
+	else
+		this->resolveResponse(root, uri, targetLocation->second);
 }
 
 void Client::resolveResponse(std::string& root, std::string& uri, const location_t& targetLocation) {
@@ -303,14 +288,7 @@ void Client::resolveResponse(std::string& root, std::string& uri, const location
 		handleDeleteRequest(root, uri);
 	}
 	request.clear();
-
-	// Clear the vector
 	requestVector.clear();
-
-	// Check that the vector is empty
-	if (requestVector.empty()) {
-		std::cout << "The vector is empty." << std::endl;
-	}
 }
 
 void Client::response(void) {
@@ -327,6 +305,6 @@ void Client::response(void) {
 		this->resolveLocation(root, uri, 0);
 	} catch (const std::exception& e) {
 		this->sendErrorCode(e.what());
-		std::cout << "-> " << e.what() << std::endl;
+		logMessage(this->method + " " + this->uri_target + RED + " -> " + e.what());
 	}
 }

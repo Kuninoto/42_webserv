@@ -1,7 +1,4 @@
 Unit test locations
-and requests like POST and uploads to / WITHOUT setting the location /
-(probably SIGSEGV due to the assumption of targetlocation reference
-on the respective functions)
 
 review !TODO comments
 
