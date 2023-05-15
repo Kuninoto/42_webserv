@@ -8,49 +8,42 @@
 #include <unistd.h>
 
 #include <cstdlib>
-#include <iostream>
 #include <map>
 #include <string>
-#include <vector>
 
 #include "libwebserv.hpp"
 
-class Lexer;
-
 class CGI {
    public:
-    CGI(const std::string& cgi_ext);
+    CGI(const std::string& cgi_ext, const std::vector<char>& request, const std::vector<std::string>& envVars);
     ~CGI(void);
 
     std::string response;
 
-   private:
-    void runCGI(void);
-    void runScript(void);
-    void createArgs(void);
-    void parseQueryString(void);
-    void getEnvVars(void);
-    void checkVars(void);
+    class CGIException : public std::exception {
+       public:
+        std::string message;
+        CGIException(std::string message) : message("CGI error: " + message){};
+        ~CGIException() throw(){};
+        virtual const char* what() const throw() {
+            return message.c_str();
+        };
+    };
 
-    char** args;
+   private:
+    void runScript(void);
+    void createArgvAndEnvp(const std::vector<std::string>& envVars);
+
+    char** argv;
+    char** envp;
+    const std::vector<char>& request;
     std::string cgi_path;
     std::string cgi_ext;
     std::vector<std::string> params;
     std::map<std::string, std::string> envVars;
     std::string runner;
-};
 
-class CGIException : public std::exception {
-   public:
-    CGIException(const std::string error) throw() { message = new std::string(error); };
-    virtual ~CGIException() throw() { delete message; }
-
-    virtual const char* what() const throw() {
-        return message->c_str();
-    };
-
-   private:
-    const std::string* message;
+    CGI(void);
 };
 
 #endif  // CGI_HPP

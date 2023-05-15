@@ -2,14 +2,16 @@
 <html>
 
 <head>
-  <title>File Upload</title>
+  <title>Upload File</title>
 </head>
 
 <body>
-  <h1>File Upload</h1>
   <form action="/upload" enctype="multipart/form-data" method="POST">
-    <input type="file" name="filename" />
-    <input type="submit" value="Upload" />
+    <label for="fileTest">Upload file:</label>
+    <br>
+    <input type="file" id="fileTest" name="fileTest">
+    <br>
+    <input type="submit" value="Upload">
   </form>
 </body>
 
