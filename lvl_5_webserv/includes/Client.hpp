@@ -61,11 +61,10 @@ class Client {
 
     bool request_sent;
 
-	std::vector<char> requestVector;
     std::string method;
     std::string request;
     std::string uri_target;
-    std::string request_content;
+    std::vector<char> requestBody;
 
     void parseRequest(void);
     void resolveLocation(std::string& root, std::string& uri, size_t safety_cap);
