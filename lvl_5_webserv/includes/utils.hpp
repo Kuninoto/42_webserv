@@ -50,4 +50,6 @@ std::string ft_ntos(const T num) {
     return as_str;
 }
 
+size_t ft_stoul(const std::string& num_as_str);
+
 #endif  // UTILS_HPP

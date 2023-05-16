@@ -4,7 +4,7 @@ INCLUDE = -I./includes
 VPATH = srcs srcs/utils
 RM = rm -rf
 
-UTILS = getNextLine splitStr trimStr endsWith isOnlySpaces sliceVec time file
+UTILS = getNextLine splitStr trimStr endsWith isOnlySpaces sliceVec time file ft_stoul
 GENERAL = Lexer CGI Server Client WebServ
 
 NAME = webserv

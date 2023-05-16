@@ -1,22 +1,34 @@
-#! /usr/bin/python3
-
+#!/usr/bin/env python3
 import cgi
-import os
 import cgitb; cgitb.enable()
+import os
 
-UPLOAD_DIR = "/upload"
+UPLOAD_FOLDER = "uploads"
 
-form = cgi.FieldStorage()
+def main():
+	form = cgi.FieldStorage()
 
-print(form)
-print()
-print(form.keys())
+	if "filename" not in form:
+		print("<h1> there's no 'filename' in the request </h1>")
+		return
 
-#if 'filename' in form:
-fileitem = form['filename']
-open(os.getcwd() + UPLOAD_DIR + os.path.basename(fileitem.filename), 'wb').write(fileitem.file.read())
-message = 'The file "' + os.path.basename(fileitem.filename) + '" was uploaded to ' + os.getcwd() + UPLOAD_DIR
-#else:
-#   message = 'Uploading Failed'
+	file_item = form["filename"]
+	filename = os.path.basename(file_item.filename)
 
-print("<h1> " + message + " </h1>")
+	if not filename:
+		print("<h1> No file was selected </h1>")
+		return
+
+	# Create the uploads folder if it doesn't exist
+	if not os.path.exists(UPLOAD_FOLDER):
+		os.makedirs(UPLOAD_FOLDER)
+
+	# Save the file
+	file_path = os.path.join(UPLOAD_FOLDER, filename)
+	with open(file_path, 'wb') as f:
+		f.write(file_item.file.read())
+
+	print(f"File '{filename}' successfully uploaded and saved")
+
+if __name__ == '__main__':
+	main()
