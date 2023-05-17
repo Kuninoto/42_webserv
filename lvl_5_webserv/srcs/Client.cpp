@@ -189,7 +189,6 @@ void Client::sendResponse(std::string uri) {
     std::ifstream file(uri.c_str(), std::ios::binary | std::ios::in);
 
     if (!file.is_open()) {
-        request.clear();
         write(this->fd, server.getErrorResponse().c_str(), server.getErrorResponse().length());
         logMessage(this->method + " " + uri + RED + " -> 404 Not Found");
         return;
@@ -267,12 +266,9 @@ void Client::resolveLocation(std::string& root, std::string& uri, size_t safety_
             return;
         }
     }
-    // !TODO
-    // if location is "/"
-    /*
-        if (tempLocation == server.getLocations().end())
-            this->resolveResponse(root, uri, genServerLocation());
-    */
+    if (tempLocation == server.getLocations().end() && this->method == "POST") {
+        throw ClientException(RS403);
+    }
     this->resolveResponse(root, uri, targetLocation->second);
 }
 
