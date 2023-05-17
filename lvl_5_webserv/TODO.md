@@ -1,14 +1,11 @@
+FIX Locations
+
 Unit test locations
 
 review !TODO comments
 
 CGI
-- Upload files
-- Make the route able to accept uploaded files and configure where they should be saved
-  (upload_to directive)
-- Content-length
 - Does CGI handle GET and DELETE?
-- Query
 
 ----------------------------------------------------
 can DELETE delete a directory?

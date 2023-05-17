@@ -41,8 +41,6 @@ class Client {
 
     std::map<std::string, std::string> headers;
 
-    location_t genServerLocation(void);
-
     class ClientException : public std::exception {
        public:
         std::string s;
@@ -75,7 +73,7 @@ class Client {
     void sendErrorCode(std::string code);
     void handleGetRequest(std::string& root, std::string& uri);
     void handlePostRequest(std::string& root, std::string& uri, const location_t& targetLocation);
-    std::vector<std::string> createEnvVars(const std::string& serverRoot, std::string uri, const location_t& targetLocation, bool upload);
+    std::vector<std::string> createEnvVars(const std::string& serverRoot, std::string uri, const location_t& targetLocation);
     void handleDeleteRequest(std::string& root, std::string& uri);
 };
 

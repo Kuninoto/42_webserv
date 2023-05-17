@@ -93,8 +93,10 @@ void Client::handleGetRequest(std::string& root, std::string& uri) {
 
     if (uri == "/")
         uri += server.getIndex();
-    if (isDirectory((root + uri).c_str()))
+    if (isDirectory((root + uri).c_str())) {
+        std::cout << "b1" << std::endl;
         throw ClientException(RS403);
+    }
     sendResponse(root + uri.erase(0, 1));
 }
 
@@ -107,7 +109,7 @@ void Client::handlePostRequest(std::string& root, std::string& uri, const locati
 
     try {
         CGI cgi(".py", requestBody, 
-                createEnvVars(root, uri, targetLocation, true),
+                createEnvVars(root, uri, targetLocation),
                 this->bodyLength, targetLocation.root + targetLocation.uploadTo);
         response = getHTMLBoilerPlate(RS200, "OK", getFileContent(".cgi_output"));
         write(this->fd, response.c_str(), response.length());
@@ -135,21 +137,18 @@ void Client::handleDeleteRequest(std::string& root, std::string& uri) {
     }
 }
 
-std::vector<std::string> Client::createEnvVars(const std::string& serverRoot, std::string uri, const location_t& targetLocation, bool upload) {
+std::vector<std::string> Client::createEnvVars(const std::string& serverRoot, std::string uri, const location_t& targetLocation) {
     std::vector<std::string> envVars;
 
     // !TODO
     // review this hardcoded path
-    if (upload) {
-        envVars.push_back("SCRIPT_FILENAME=cgi-bin/upload_cgi.py");
-    } else {
-        envVars.push_back("SCRIPT_FILENAME=" + (serverRoot + targetLocation.cgi_path + uri.erase(0, 1)));
-        //! TODO
-        // QUERY STRING IS ONLY APPLIED WHEN POST HAVE IN FACT QUERIES
-        // (?)
-        // envVars.push_back("QUERY_STRING=" + headers[requestBody]);
-        // std::cout << "QUERY_STRING = " << getenv("QUERY_STRING") << std::endl;
-    }
+    //    envVars.push_back("SCRIPT_FILENAME=cgi-bin/upload_cgi.py");
+    
+    (void)targetLocation;
+    if (uri.at(0) == '/')
+        uri.erase(0, 1);
+    std::cout << "SCRIPT_FILENAME = " << (serverRoot + uri) << std::endl;
+    envVars.push_back("SCRIPT_FILENAME=" + (serverRoot + uri));
 
     if (headers.count("Content-Length") > 0)
         envVars.push_back("CONTENT_LENGTH=" + headers["Content-Length"]);
@@ -244,7 +243,7 @@ void Client::resolveLocation(std::string& root, std::string& uri, size_t safety_
 
         if (tempLocation->second.redirect.size()) {
             uri.erase(locate, tempLocation->first.size())
-                .insert(locate, tempLocation->second.redirect);
+               .insert(locate, tempLocation->second.redirect);
             this->resolveLocation(root, uri, safety_cap);
             return;
         }
@@ -261,14 +260,18 @@ void Client::resolveLocation(std::string& root, std::string& uri, size_t safety_
                 this->sendDirectoryListing(root + uri.erase(0, 1));
             } else if (uri == "/")
                 this->sendResponse(root + server.getIndex());
-            else
+            else {
                 throw ClientException(RS403);
+            }
             return;
         }
     }
-    if (tempLocation == server.getLocations().end() && this->method == "POST") {
-        throw ClientException(RS403);
-    }
+    // !TODO
+    // location '/'
+
+    //if (tempLocation == server.getLocations().end() && this->method == "POST") {
+    //    throw ClientException(RS403);
+    //}
     this->resolveResponse(root, uri, targetLocation->second);
 }
 
@@ -281,6 +284,7 @@ void Client::resolveResponse(std::string& root, std::string& uri, const location
         handleDeleteRequest(root, uri);
     }
     request.clear();
+    requestBody.clear();
 }
 
 void Client::response(void) {

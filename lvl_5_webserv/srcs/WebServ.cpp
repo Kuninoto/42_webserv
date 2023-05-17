@@ -113,8 +113,6 @@ void WebServ::runServers(void) {
             short revent = pollfds.at(i).revents;
 
             if (revent & POLLIN) {
-                char buffer[1024] = {0};
-
                 if (isFdAServer(this->pollfds.at(i).fd)) {
                     acceptClientConnection(i);
                     continue;
@@ -242,8 +240,8 @@ static locationPair parseLocation(const std::map<std::string, std::string>& lexe
         newLocation.cgi_ext = lexerParameters.find("cgi_ext")->second;
     } else
         newLocation.hasCGI = false;
-    if (lexerParameters.count("upload_to") > 0)
-        newLocation.uploadTo = lexerParameters.find("upload_to")->second;
+    if (lexerParameters.count("upload_to") > 0) {
+        std::string tempUploadTo = lexerParameters.find("upload_to")->second;
 
 		if (tempUploadTo.at(0) == '/') 
 			newLocation.uploadTo = tempUploadTo.erase(0, 1); 

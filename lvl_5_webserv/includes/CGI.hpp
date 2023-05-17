@@ -15,7 +15,9 @@
 
 class CGI {
    public:
-    CGI(const std::string& cgi_ext, const std::string& request, const std::vector<std::string>& envVars, size_t bodyLength, const std::string& uploadTo);
+    CGI(const std::string& cgi_ext, const std::string& request,
+        const std::vector<std::string>& envVars, size_t bodyLength,
+        const std::string& uploadTo);
     ~CGI(void);
 
     std::string response;

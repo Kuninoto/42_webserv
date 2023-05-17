@@ -86,9 +86,6 @@ void CGI::runScript(void) {
     if (pipe(pipedes) == -1)
         throw CGIException("pipe() failed");
 
-
-    std::cout << "BEFORE write()" << std::endl;
-
     fcntl(pipedes[WRITE_END], F_SETPIPE_SZ, this->bodyLength);
 
     write(pipedes[WRITE_END], this->request.data(), this->bodyLength);
