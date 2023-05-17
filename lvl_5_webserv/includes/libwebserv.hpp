@@ -19,7 +19,7 @@
 #include "utils.hpp"
 
 #define ERROR_MSG_PREFFIX "webserv: error: "
-#define ARGS_ERR "invalid arguments"
+#define NO_CONFIG_FILE_ERR "no configuration file provided"
 
 /**
  * @brief Writes <error_msg> in the cerr stream followed by an endl.

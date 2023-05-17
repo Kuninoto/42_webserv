@@ -6,6 +6,7 @@
 
 #include <fstream>
 #include <sstream>
+#include <sys/socket.h>
 
 #include "WebServ.hpp"
 
@@ -34,7 +35,8 @@ static std::string parsePortNumber(const std::string& port_as_str) {
     unsigned long temp = strtoul(port_as_str.c_str(), NULL, 10);
     bool strtoul_success = (temp == UINT64_MAX && errno == ERANGE) ? false : true;
 
-    if (port_as_str.find_first_not_of("0123456789") != std::string::npos || !strtoul_success || temp > UINT16_MAX)
+    if (port_as_str.find_first_not_of("0123456789") != std::string::npos
+    || !strtoul_success || temp > UINT16_MAX)
         throw WebServ::ParserException("invalid port number \"" + port_as_str + "\"");
     return port_as_str;
 }
@@ -47,10 +49,23 @@ Server::Server(std::map<std::string, std::string>& parameters) {
         "root",
         "index",
         "client_max_body_size"};
+    
+    const static std::string forbiddenKeyWords[] = {
+        "upload_to",
+        "cgi_path",
+        "cgi_ext",
+        "allow_methods",
+        "auto_index",
+        "try_file"};
 
     for (size_t i = 0; i < 6; i += 1) {
         if (parameters.count(mustHaveKeyWords[i]) == 0)
             throw WebServ::ParserException("no provided value for " + mustHaveKeyWords[i]);
+    }
+
+    for (size_t i = 0; i < 6; i += 1) {
+        if (parameters.count(forbiddenKeyWords[i]) > 0)
+            throw WebServ::ParserException("server block cannot have " + forbiddenKeyWords[i] + " directive");
     }
 
     this->port = parsePortNumber(parameters["listen"]);

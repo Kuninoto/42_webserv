@@ -2,10 +2,8 @@
 #define SERVER_HPP
 
 #include <stdint.h>
-#include <sys/socket.h>
 
 #include <map>
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -20,6 +18,7 @@ typedef struct location_s {
     bool hasCGI;
     std::string cgi_path;
     std::string cgi_ext;
+    std::string uploadTo;
 }               location_t;
 
 typedef std::map<std::string, location_t> locationMap;
