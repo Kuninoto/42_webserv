@@ -2,8 +2,9 @@
 import cgi
 import cgitb; cgitb.enable()
 import os
+import sys
 
-UPLOAD_FOLDER = "uploads"
+UPLOAD_FOLDER = sys.argv[1]
 
 def main():
 	form = cgi.FieldStorage()

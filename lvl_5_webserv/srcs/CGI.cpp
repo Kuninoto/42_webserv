@@ -1,6 +1,7 @@
 #include "CGI.hpp"
 
 #include <unistd.h>
+#include <fcntl.h>
 
 #include <iostream>
 #include <sstream>
@@ -25,8 +26,10 @@ static std::string getScriptFileName(const std::vector<std::string> envVars) {
     return "";
 };
 
-CGI::CGI(const std::string& cgi_ext, const std::vector<char>& request, const std::vector<std::string>& envVars)
-    : request(request) {
+CGI::CGI(const std::string& cgi_ext, const std::string& request,
+         const std::vector<std::string>& envVars, size_t bodyLength,
+         const std::string& uploadTo)
+    : request(request), bodyLength(bodyLength), uploadTo(uploadTo) {
     cout << "RUNNING CGI" << endl;
     this->cgi_path = getScriptFileName(envVars);
     if (cgi_path.empty())
@@ -46,11 +49,12 @@ CGI::CGI(const std::string& cgi_ext, const std::vector<char>& request, const std
     if (access(this->cgi_path.c_str(), F_OK) != 0)
         throw CGIException("Invalid CGI file");
     this->createArgvAndEnvp(envVars);
+    std::cout << "bodyLength = " << this->bodyLength << std::endl;
     this->runScript();
 }
 
 CGI::~CGI(void) {
-    // remove(".cgi_output");
+    remove(".cgi_output");
     for (size_t i = 0; this->argv[i]; i += 1)
         free(this->argv[i]);
     delete[] this->argv;
@@ -82,11 +86,12 @@ void CGI::runScript(void) {
     if (pipe(pipedes) == -1)
         throw CGIException("pipe() failed");
 
-    //std::cout << "CGI REQUEST:\n"
-    //          << this->request.data()
-    //          << std::endl;
 
-    write(pipedes[WRITE_END], this->request.data(), this->request.size());
+    std::cout << "BEFORE write()" << std::endl;
+
+    fcntl(pipedes[WRITE_END], F_SETPIPE_SZ, this->bodyLength);
+
+    write(pipedes[WRITE_END], this->request.data(), this->bodyLength);
     close(pipedes[WRITE_END]);
 
     pid = fork();
@@ -114,10 +119,11 @@ void CGI::runScript(void) {
 void CGI::createArgvAndEnvp(const std::vector<std::string>& envVars) {
     if (cgi_ext == ".py") {
         runner = "/usr/bin/python3";
-        argv = new char*[3];
+        argv = new char*[4];
         argv[0] = strdup("python3");
         argv[1] = strdup(this->cgi_path.c_str());
-        argv[2] = NULL;
+        argv[2] = strdup(this->uploadTo.c_str());
+        argv[3] = NULL;
     }
 
     this->envp = new char*[envVars.size() + 1];

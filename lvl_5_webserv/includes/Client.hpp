@@ -29,7 +29,7 @@ class Client {
    public:
     Client(Server server, int fd);
     std::string getRequest(void) { return this->request; };
-    void setRequest(std::string request);
+    void setRequest(const char *chunk, size_t bufferLength);
 
     void response(void);
     int getFd(void) const { return this->fd; };
@@ -64,7 +64,8 @@ class Client {
     std::string method;
     std::string request;
     std::string uri_target;
-    std::vector<char> requestBody;
+    std::string requestBody;
+    size_t bodyLength;
 
     void parseRequest(void);
     void resolveLocation(std::string& root, std::string& uri, size_t safety_cap);

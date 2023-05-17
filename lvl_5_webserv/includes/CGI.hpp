@@ -15,7 +15,7 @@
 
 class CGI {
    public:
-    CGI(const std::string& cgi_ext, const std::vector<char>& request, const std::vector<std::string>& envVars);
+    CGI(const std::string& cgi_ext, const std::string& request, const std::vector<std::string>& envVars, size_t bodyLength, const std::string& uploadTo);
     ~CGI(void);
 
     std::string response;
@@ -34,13 +34,14 @@ class CGI {
     void runScript(void);
     void createArgvAndEnvp(const std::vector<std::string>& envVars);
 
+    const std::string& request;
+    const size_t bodyLength;
+    const std::string& uploadTo;
     char** argv;
     char** envp;
-    const std::vector<char>& request;
     std::string cgi_path;
     std::string cgi_ext;
     std::vector<std::string> params;
-    std::map<std::string, std::string> envVars;
     std::string runner;
 
     CGI(void);
