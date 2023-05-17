@@ -7,9 +7,10 @@
 
 #include "CGI.hpp"
 
-Client::Client(Server server, int fd) : server(server), fd(fd), request_sent(false){};
+Client::Client(Server server, int fd) : server(server), fd(fd), request_sent(false) {};
 
 void Client::setRequest(const char *chunk, size_t bufferLength) {
+    this->last_request = std::time(NULL);
     this->request_sent = false;
     this->request.append(chunk, bufferLength);
 }
@@ -67,7 +68,7 @@ void Client::parseRequest(void) {
     // if allHeadersSet()
     // throw ClientException(RS400);
 
-    // GET doesn't have a body so
+    // GET doesn't have body so
     // parsing ends here
     if (method == "GET")
         return;
@@ -291,14 +292,15 @@ void Client::response(void) {
     if (!this->preparedToSend())
         return;
     this->request_sent = true;
+    this->last_request = std::time(NULL);
 
     try {
         this->parseRequest();
-
         std::string root = this->server.getRoot();
         std::string uri = this->uri_target;
 
         this->resolveLocation(root, uri, 0);
+
     } catch (const std::exception& e) {
         this->sendErrorCode(e.what());
         logMessage(this->method + " " + this->uri_target + RED + " -> " + e.what());

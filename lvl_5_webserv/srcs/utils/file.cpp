@@ -4,8 +4,8 @@
 
 #include <fstream>
 #include <iostream>
-#include <sstream>
 #include <map>
+#include <sstream>
 #include <string>
 
 #include "utils.hpp"
@@ -56,18 +56,24 @@ std::string getHTMLBoilerPlate(const std::string& code, const std::string& title
         "    <meta charset=\"UTF-8\">\n"
         "    <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n"
         "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n"
-        "    <title>" + title + "</title>\n"
+        "    <title>" +
+        title +
+        "</title>\n"
         "</head>\n"
-        "<body>\n    " + body + "\n</body>\n"
+        "<body>\n    " +
+        body +
+        "\n</body>\n"
         "</html>\n";
 
     std::string response =
-        "HTTP/1.1 " + code + "\n"
-        "Date: " + getTimeStamp() + "\n"
+        "HTTP/1.1 " + code +
+        "\n"
+        "Date: " +
+        getTimeStamp() +
+        "\n"
         "Server: 42_Webserv/1.0 (Linux)\n" +
         "Content-Type: text/html; charset=UTF-8\n" +
-        "Content-Length: " + ft_ntos(html.size()) + "\n\n"
-        + html;
+        "Content-Length: " + ft_ntos(html.size()) + "\n\n" + html;
     return response;
 }
 
@@ -92,9 +98,13 @@ std::string getFileSize(const std::string& file) {
 std::string getOkHeader(const std::string& file) {
     std::string header =
         "HTTP/1.1 200 OK\n"
-        "Date: " + getTimeStamp() + "\n"
-        "Server: Server: 42_Webserv/1.0 (Linux)\n" +
-        "Content-Type: " + getFileType(file) + "; charset=UTF-8\n" +
+        "Date: " +
+        getTimeStamp() +
+        "\n"
+        "Server: 42_Webserv/1.0 (Linux)\n" +
+        "Connection: keep-alive\n" +
+        "Content-Type: " +
+        getFileType(file) + "; charset=UTF-8\n" +
         "Content-Length: " + getFileSize(file) + "\n\n";
 
     return header;
@@ -105,6 +115,6 @@ std::string getFileContent(const std::string& file) {
     std::string fileContent;
 
     fileContent.append((std::istreambuf_iterator<char>(fileStream)),
-                        std::istreambuf_iterator<char>());
+                       std::istreambuf_iterator<char>());
     return fileContent;
 }

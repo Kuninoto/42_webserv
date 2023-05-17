@@ -35,8 +35,10 @@ CGI::CGI(const std::string& cgi_ext, const std::string& request,
     if (cgi_path.empty())
         throw CGIException("No SCRIPT_FILENAME provided");
     this->cgi_ext = cgi_ext;
+    
     cout << "CGI PATH: " << this->cgi_path << endl;
     cout << "CGI Ext: " << this->cgi_ext << endl;
+    cout << "bodyLength = " << this->bodyLength << endl;
 
     size_t dotPos = cgi_path.find_last_of('.');
     if (dotPos == std::string::npos)
@@ -49,7 +51,6 @@ CGI::CGI(const std::string& cgi_ext, const std::string& request,
     if (access(this->cgi_path.c_str(), F_OK) != 0)
         throw CGIException("Invalid CGI file");
     this->createArgvAndEnvp(envVars);
-    std::cout << "bodyLength = " << this->bodyLength << std::endl;
     this->runScript();
 }
 
@@ -116,6 +117,7 @@ void CGI::runScript(void) {
 void CGI::createArgvAndEnvp(const std::vector<std::string>& envVars) {
     if (cgi_ext == ".py") {
         runner = "/usr/bin/python3";
+
         argv = new char*[4];
         argv[0] = strdup("python3");
         argv[1] = strdup(this->cgi_path.c_str());
@@ -124,7 +126,7 @@ void CGI::createArgvAndEnvp(const std::vector<std::string>& envVars) {
     }
 
     this->envp = new char*[envVars.size() + 1];
-
+  
     size_t i = 0;
     std::vector<std::string>::const_iterator v_it;
     for (v_it = envVars.begin(); v_it != envVars.end(); v_it++, i++) {
