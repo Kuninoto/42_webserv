@@ -75,6 +75,7 @@ class Client {
     time_t last_request;
 
     void parseRequest(void);
+    bool allHeadersSet(void);
     void resolveLocation(std::string& root, std::string& uri, size_t safety_cap);
     void resolveResponse(std::string& root, std::string& uri, const location_t& targetLocation);
     void sendDirectoryListing(std::string uri);
@@ -82,7 +83,7 @@ class Client {
     void sendErrorCode(std::string code);
     void handleGetRequest(std::string& root, std::string& uri);
     void handlePostRequest(std::string& root, std::string& uri, const location_t& targetLocation);
-    std::vector<std::string> createEnvVars(const std::string& serverRoot, std::string uri, const location_t& targetLocation);
+    std::vector<std::string> createEnvVars(const std::string& serverRoot, std::string uri);
     void handleDeleteRequest(std::string& root, std::string& uri);
 };
 

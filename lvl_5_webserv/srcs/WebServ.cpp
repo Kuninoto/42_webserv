@@ -157,7 +157,6 @@ void WebServ::runServers(void) {
                 }
                 if (!clients.at(clientFdIdx).preparedToSend())
                     continue;
-                // REFACTOR THIS LINE
                 clients.at(clientFdIdx).setTargetServer(getServerByName(clients.at(clientFdIdx).getRequest(), clients.at(clientFdIdx).getTargetServer()));
                 clients.at(clientFdIdx).response();
             }

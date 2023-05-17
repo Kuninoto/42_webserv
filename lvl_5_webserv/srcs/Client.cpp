@@ -64,10 +64,6 @@ void Client::parseRequest(void) {
         }
     }
 
-    // !TODO
-    // if allHeadersSet()
-    // throw ClientException(RS400);
-
     // GET doesn't have body so
     // parsing ends here
     if (method == "GET")
@@ -108,9 +104,13 @@ void Client::handlePostRequest(std::string& root, std::string& uri, const locati
         throw ClientException(RS405);
     }
 
+    // !TODO
+    // review which root is needed
+    (void)root;
+
     try {
         CGI cgi(".py", requestBody, 
-                createEnvVars(root, uri, targetLocation),
+                createEnvVars(targetLocation.root, uri),
                 this->bodyLength, targetLocation.root + targetLocation.uploadTo);
         response = getHTMLBoilerPlate(RS200, "OK", getFileContent(".cgi_output"));
         write(this->fd, response.c_str(), response.length());
@@ -138,14 +138,9 @@ void Client::handleDeleteRequest(std::string& root, std::string& uri) {
     }
 }
 
-std::vector<std::string> Client::createEnvVars(const std::string& serverRoot, std::string uri, const location_t& targetLocation) {
+std::vector<std::string> Client::createEnvVars(const std::string& serverRoot, std::string uri) {
     std::vector<std::string> envVars;
 
-    // !TODO
-    // review this hardcoded path
-    //    envVars.push_back("SCRIPT_FILENAME=cgi-bin/upload_cgi.py");
-    
-    (void)targetLocation;
     if (uri.at(0) == '/')
         uri.erase(0, 1);
     std::cout << "SCRIPT_FILENAME = " << (serverRoot + uri) << std::endl;
