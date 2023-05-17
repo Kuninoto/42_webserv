@@ -21,6 +21,7 @@
 #define RS405 "405 Method Not Allowed"
 #define RS413 "413 Content Too Large"
 #define RS414 "414 URI Too Large"
+#define RS500 "500 Internal Server Error"
 #define RS501 "501 Not Implemented"
 #define RS505 "505 HTTP Version Not Supported"
 #define RS508 "508 Loop Detected"
@@ -31,7 +32,7 @@ class Client {
    public:
     Client(Server server, int fd);
     std::string getRequest(void) { return this->request; };
-    void setRequest(std::string request);
+    void setRequest(const char *chunk, size_t bufferLength);
 
     void response(void);
     int getFd(void) const { return this->fd; };
@@ -47,17 +48,6 @@ class Client {
     };
 
     std::map<std::string, std::string> headers;
-
-    template <typename K, typename V>
-    void printMap(const std::map<K, V>& myMap) {
-        std::cout << "-------------------------------" << std::endl;
-        std::cout << "Printing map contents:" << std::endl;
-
-        for (typename std::map<K, V>::const_iterator it = myMap.begin(); it != myMap.end(); ++it) {
-            std::cout << it->first << " : " << it->second << std::endl;
-        }
-        std::cout << "-------------------------------" << std::endl;
-    }
 
     class ClientException : public std::exception {
        public:
@@ -80,8 +70,8 @@ class Client {
     std::string method;
     std::string request;
     std::string uri_target;
-    std::string request_content;
-    std::time_t last_request;
+    std::string requestBody;
+    size_t bodyLength;
 
     void parseRequest(void);
     void resolveLocation(std::string& root, std::string& uri, size_t safety_cap);
@@ -89,9 +79,9 @@ class Client {
     void sendDirectoryListing(std::string uri);
     void sendResponse(std::string uri);
     void sendErrorCode(std::string code);
-    void createEnvVars(std::string uri);
     void handleGetRequest(std::string& root, std::string& uri);
     void handlePostRequest(std::string& root, std::string& uri, const location_t& targetLocation);
+    std::vector<std::string> createEnvVars(const std::string& serverRoot, std::string uri, const location_t& targetLocation);
     void handleDeleteRequest(std::string& root, std::string& uri);
 };
 

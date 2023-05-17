@@ -114,15 +114,15 @@ void WebServ::runServers(void) {
             short revent = pollfds.at(i).revents;
 
             if (revent & POLLIN) {
-                char buffer[1024] = {0};
-
                 if (isFdAServer(this->pollfds.at(i).fd)) {
                     acceptClientConnection(i);
                     continue;
                 }
 
-                if (recv(pollfds.at(i).fd, buffer, 1023, 0) > 0) {
-                    clients.at(clientFdIdx).setRequest(std::string(buffer));
+				char buffer[2048] = {0};
+				int rd_bytes;
+                if ((rd_bytes = recv(pollfds.at(i).fd, buffer, 2048, 0)) > 0) {
+                    clients.at(clientFdIdx).setRequest(buffer, rd_bytes);
                 } else {
                     closeClientConnection(i, clientFdIdx);
                 }
@@ -235,6 +235,8 @@ static locationPair parseLocation(const std::map<std::string, std::string>& lexe
         newLocation.redirect = lexerParameters.find("return")->second;
     if (lexerParameters.count("auto_index") > 0)
         newLocation.auto_index = lexerParameters.find("auto_index")->second == "on" ? true : false;
+    else
+        newLocation.auto_index = false;
     if (lexerParameters.count("try_file") > 0)
         newLocation.try_file = lexerParameters.find("try_file")->second;
     if (lexerParameters.count("cgi_path") > 0 && lexerParameters.count("cgi_ext") > 0) {
@@ -243,8 +245,16 @@ static locationPair parseLocation(const std::map<std::string, std::string>& lexe
         newLocation.cgi_ext = lexerParameters.find("cgi_ext")->second;
     } else
         newLocation.hasCGI = false;
-    trimStr(locationPath, " ");
-    return std::make_pair<std::string, location_t>(locationPath, newLocation);
+    if (lexerParameters.count("upload_to") > 0) {
+        std::string tempUploadTo = lexerParameters.find("upload_to")->second;
+
+		if (tempUploadTo.at(0) == '/') 
+			newLocation.uploadTo = tempUploadTo.erase(0, 1); 
+		else
+			newLocation.uploadTo = tempUploadTo;
+	}
+	trimStr(locationPath, " ");
+	return std::make_pair<std::string, location_t>(locationPath, newLocation);
 }
 
 static void readLocationBlock(Lexer& lexer, Token& token) {
@@ -265,8 +275,6 @@ std::vector<Server> WebServ::parseConfigFile(const std::string& filename) {
         while (true) {
             if (token.value == "server") {
                 token = lexer.nextToken();
-                if (token.type != LEFT_CURLY_BRACKET)
-                    throw WebServ::ParserException("no opening bracket for server");
             }
 
             if (token.type == LEFT_CURLY_BRACKET) {
@@ -293,9 +301,6 @@ std::vector<Server> WebServ::parseConfigFile(const std::string& filename) {
             }
             token = lexer.nextToken();
         }
-
-        if (curly_brackets != 0)
-            throw WebServ::ParserException("Unclosed curly brackets");
         token = lexer.nextToken();
     }
     return servers;
