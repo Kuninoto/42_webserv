@@ -72,6 +72,7 @@ class Client {
     std::string uri_target;
     std::string requestBody;
     size_t bodyLength;
+    time_t last_request;
 
     void parseRequest(void);
     void resolveLocation(std::string& root, std::string& uri, size_t safety_cap);
