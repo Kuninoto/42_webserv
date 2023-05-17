@@ -9,9 +9,9 @@
 
 Client::Client(Server server, int fd) : server(server), fd(fd), request_sent(false){};
 
-void Client::setRequest(std::string request) {
+void Client::setRequest(const char *chunk, size_t bufferLength) {
     this->request_sent = false;
-    this->request += request;
+    this->request.append(chunk, bufferLength);
 }
 
 void Client::parseRequest(void) {
@@ -25,6 +25,7 @@ void Client::parseRequest(void) {
     components = splitStr(line, ' ');
     if (components.size() != 3)
         throw ClientException(RS400);
+
     // Set the method of the request if it's an implemented one (GET, POST, or DELETE)
     if (components.at(0) == "GET" || components.at(0) == "POST" || components.at(0) == "DELETE")
         this->method = components.at(0);
@@ -71,21 +72,17 @@ void Client::parseRequest(void) {
     if (method == "GET")
         return;
 
-    // while (getNextLine(ss, line)) {
-    //     requestBody.append(line);
-    // }
-
-    size_t bodyLength = ft_stoul(headers["Content-Length"]);
-    if (bodyLength > this->server.getMaxBodySize())
+    this->bodyLength = ft_stoul(headers["Content-Length"]);
+    if (this->bodyLength > this->server.getMaxBodySize())
         throw ClientException(RS413);
-
+    
     std::streampos tempPos = ss.tellg();
     std::stringstream binary_ss(ss.str(), std::stringstream::in | std::stringstream::binary);
     binary_ss.seekg(tempPos);
 
-    this->requestBody = std::vector<char>(bodyLength);
+    this->requestBody.resize(this->bodyLength);
 
-    binary_ss.read(&requestBody[0], bodyLength);
+    binary_ss.read(&requestBody[0], this->bodyLength);
 }
 
 void Client::handleGetRequest(std::string& root, std::string& uri) {
@@ -108,14 +105,10 @@ void Client::handlePostRequest(std::string& root, std::string& uri, const locati
         throw ClientException(RS405);
     }
 
-    std::cout << "UPLOAD" << std::endl;
     try {
-        // !TODO
-        // cgi must upload the files to the path on uploadTo directive
-
-        // std::vector<char> requestBody_as_vec(requestBody.begin(), requestBody.end());
-
-        CGI cgi(".py", requestBody, createEnvVars(root, uri, targetLocation, true));
+        CGI cgi(".py", requestBody, 
+                createEnvVars(root, uri, targetLocation, true),
+                this->bodyLength, targetLocation.root + targetLocation.uploadTo);
         response = getHTMLBoilerPlate(RS200, "OK", getFileContent(".cgi_output"));
         write(this->fd, response.c_str(), response.length());
         logMessage(this->method + " " + uri + GREEN + " -> 200 OK");
@@ -158,7 +151,10 @@ std::vector<std::string> Client::createEnvVars(const std::string& serverRoot, st
         // std::cout << "QUERY_STRING = " << getenv("QUERY_STRING") << std::endl;
     }
 
-    envVars.push_back("CONTENT_LENGTH=" + headers["Content-Length"]);
+    if (headers.count("Content-Length") > 0)
+        envVars.push_back("CONTENT_LENGTH=" + headers["Content-Length"]);
+    else
+        envVars.push_back("CONTENT_LENGTH=-1");
     envVars.push_back("CONTENT_TYPE=" + headers["Content-Type"]);
     envVars.push_back("GATEWAY_INTERFACE=CGI/1.1");
     envVars.push_back("REQUEST_METHOD=" + this->method);
@@ -226,21 +222,6 @@ void Client::sendErrorCode(std::string code) {
     this->request.clear();
 }
 
-location_t Client::genServerLocation(void) {
-    location_t serverLocation = {
-        .root = this->server.getRoot(),
-        .allowed_methods = std::vector<std::string>(0),
-        .redirect = "",
-        .auto_index = false,
-        .try_file = "",
-        .hasCGI = false,
-        .cgi_path = "",
-        .cgi_ext = "",
-        .uploadTo = "",
-    };
-    return serverLocation;
-}
-
 void Client::resolveLocation(std::string& root, std::string& uri, size_t safety_cap) {
     if (safety_cap >= 20)
         throw ClientException(RS508);
@@ -278,8 +259,6 @@ void Client::resolveLocation(std::string& root, std::string& uri, size_t safety_
             if (tempLocation->second.try_file.size())
                 this->sendResponse(root + uri + "/" + tempLocation->second.try_file);
             else if (tempLocation->second.auto_index) {
-                // !TODO
-                // FIX: localhost:8080/test is getting autoindex (it shouldn't)
                 this->sendDirectoryListing(root + uri.erase(0, 1));
             } else if (uri == "/")
                 this->sendResponse(root + server.getIndex());

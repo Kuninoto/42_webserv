@@ -113,15 +113,15 @@ void WebServ::runServers(void) {
 			short revent = pollfds.at(i).revents;
 
 			if (revent & POLLIN) {
-				char buffer[1024] = {0};
-
 				if (isFdAServer(this->pollfds.at(i).fd)) {
 					acceptClientConnection(i);
 					continue;
 				}
 
-				if (recv(pollfds.at(i).fd, buffer, 1023, 0) > 0) {
-					clients.at(clientFdIdx).setRequest(std::string(buffer));
+				char buffer[2048] = {0};
+				int rd_bytes;
+				if ((rd_bytes = recv(pollfds.at(i).fd, buffer, 2048, 0)) > 0) {
+					clients.at(clientFdIdx).setRequest(buffer, rd_bytes);
 				} else {
 					closeClientConnection(i, clientFdIdx);
 				}
@@ -238,9 +238,14 @@ static locationPair parseLocation(const std::map<std::string, std::string>& lexe
 		newLocation.cgi_ext = lexerParameters.find("cgi_ext")->second;
 	} else
 		newLocation.hasCGI = false;
-	if (lexerParameters.count("upload_to") > 0)
-		newLocation.uploadTo = lexerParameters.find("upload_to")->second; 
+	if (lexerParameters.count("upload_to") > 0) {
+		std::string tempUploadTo = lexerParameters.find("upload_to")->second;
 
+		if (tempUploadTo.at(0) == '/') 
+			newLocation.uploadTo = tempUploadTo.erase(0, 1); 
+		else
+			newLocation.uploadTo = tempUploadTo;
+	}
 	trimStr(locationPath, " ");
 	return std::make_pair<std::string, location_t>(locationPath, newLocation);
 }
