@@ -102,6 +102,7 @@ void WebServ::closeClientConnection(int idx, int clientFdIdx) {
     close(pollfds.at(idx).fd);
     pollfds.erase(pollfds.begin() + idx);
     clients.erase(clients.begin() + clientFdIdx);
+    std::cout << RED "Connection close" << std::endl;
 }
 
 void WebServ::runServers(void) {
@@ -150,6 +151,10 @@ void WebServ::runServers(void) {
                 continue;
 
             if (revent & POLLOUT) {
+                if (clients.at(clientFdIdx).timeout()) {
+                    closeClientConnection(i, clientFdIdx);
+                    continue;
+                }
                 if (!clients.at(clientFdIdx).preparedToSend())
                     continue;
                 // REFACTOR THIS LINE
