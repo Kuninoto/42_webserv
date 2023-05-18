@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>WebServe v1.0</title>
+    <title>42_WebServ v1.0</title>
     <link rel="stylesheet" href="fontawesome/css/all.min.css" />
     <!-- https://fontawesome.com/ -->
     <link
@@ -21,67 +21,46 @@
         class="tm-site-header tm-flex-center tm-mb-50 tm-bgcolor-1 tm-border-rounded"
       >
         <i class="fa fa-star fa-3x"></i>
-        <h1>42 WebServ</h1>
+        <h1>42_WebServ</h1>
       </section>
 
       <section class="tm-about tm-mb-80 tm-p-50 tm-bgcolor-2 tm-border-rounded">
         <div class="tm-about-header tm-flex-center">
           <i class="fas fa-users fa-2x"></i>
-          <h2>About Us</h2>
+          <h2>This project</h2>
         </div>
         <div class="tm-about-text">
           <p class="tm-mb-40">
-            Nano Folio is simple HTML template with a minimal very light-weight
-            custom CSS file. Max content width is 940 pixels. You can easily
-            change the width or any part in this template. Gallery comes with a
-            pop-up image and simple categories.
-          </p>
-          <p class="tm-mb-0">
-            Please support Tooplate website by telling your friends about it.
-            That is going to be very helpful for us. Feel free to
-            <a
-              rel="nofollow"
-              href="https://www.tooplate.com/contact"
-              target="_blank"
-              >message us</a
-            >
-            via email or live chat if you have anything to say.
+            This project is here to make you write your own HTTP server. You
+            will be able to test it with a real browser. HTTP is one of the most
+            used protocol on internet. Knowing its arcane will be useful, even
+            if you won't be working on a website.
           </p>
         </div>
       </section>
 
       <section class="tm-contact tm-mb-50 tm-bgcolor-3 tm-border-rounded">
-        <div class="tm-contact-header tm-flex-center">
-          <i class="fas fa-map-pin fa-3x"></i>
-          <h2>Contact</h2>
-        </div>
-        <div class="tm-contact-info">
-          <address class="tm-mb-30">
-            120 Curabitur sed tortor ultrices, congue odio eget, posuere urna.
-            Praesent at rhoncus 10680
-          </address>
-          <div class="tm-text-white tm-mb-40">
-            Tel: <a href="tel:0100200340" class="tm-link-white">010-020-0340</a>
-          </div>
-        </div>
         <div class="tm-contact-form-container">
+          <h2 class="tm-h2">Upload file</h2>
           <form
             id="contact-form"
-            action=""
+            action="/upload/upload_file.py"
+            enctype="multipart/form-data"
             method="POST"
             class="tm-contact-form"
           >
-            <input type="text" name="name" placeholder="name" required="" />
-            <input type="email" name="email" placeholder="email" required="" />
-            <textarea
-              rows="5"
-              name="message"
-              class="tm-mb-30"
-              placeholder="message"
-              required=""
-            ></textarea>
-            <button type="submit" class="tm-right tm-btn-submit">send</button>
+            <input type="file" name="filename" />
+            <button type="submit" class="tm-center tm-btn-submit">
+              Upload
+            </button>
           </form>
+        </div>
+
+        <div class="tm-contact-form-container">
+          <h2>Delete File</h2>
+            <input type="text" id="filename" name="filename" />
+            <button onclick="sendDeleteRequest()">Delete File</button>
+          </div>
         </div>
       </section>
 
@@ -92,5 +71,23 @@
     <script src="js/imagesloaded.pkgd.min.js"></script>
     <script src="js/isotope.pkgd.min.js"></script>
     <script src="js/jquery.magnific-popup.min.js"></script>
+
+    <script>
+      function sendDeleteRequest() {
+        const filename = document.getElementById("filename").value;
+        fetch("/delete/" + filename, {
+          method: "DELETE",
+        })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`HTTP error ${response.status}`);
+            }
+            console.log(`File '${filename}' deleted successfully`);
+          })
+          .catch((error) => {
+            console.error(`Error deleting file '${filename}':`, error);
+          });
+      }
+    </script>
   </body>
 </html>

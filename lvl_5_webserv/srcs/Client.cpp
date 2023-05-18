@@ -7,9 +7,9 @@
 
 #include "CGI.hpp"
 
-Client::Client(Server server, int fd) : server(server), fd(fd), request_sent(false) {};
+Client::Client(Server server, int fd) : server(server), fd(fd), request_sent(false){};
 
-void Client::setRequest(const char *chunk, size_t bufferLength) {
+void Client::setRequest(const char* chunk, size_t bufferLength) {
     this->last_request = std::time(NULL);
     this->request_sent = false;
     this->request.append(chunk, bufferLength);
@@ -39,6 +39,10 @@ void Client::parseRequest(void) {
     if (this->uri_target.length() > 1024)
         throw ClientException(RS414);
 
+    // if URI contains ..
+    if (this->uri_target.find("../") != std::string::npos || this->uri_target == "..")
+        throw ClientException(RS400);
+
     // Check if the HTTP version is valid (must be HTTP/1.1)
     if (components.at(2) == "HTTP/1.0\r")
         throw ClientException(RS505);
@@ -66,13 +70,13 @@ void Client::parseRequest(void) {
 
     // GET doesn't have body so
     // parsing ends here
-    if (method == "GET")
+    if (method == "GET" || method == "DELETE")
         return;
 
     this->bodyLength = ft_stoul(headers["Content-Length"]);
     if (this->bodyLength > this->server.getMaxBodySize())
         throw ClientException(RS413);
-    
+
     std::streampos tempPos = ss.tellg();
     std::stringstream binary_ss(ss.str(), std::stringstream::in | std::stringstream::binary);
     binary_ss.seekg(tempPos);
@@ -109,8 +113,8 @@ void Client::handlePostRequest(std::string& root, std::string& uri, const locati
     (void)root;
 
     try {
-        CGI cgi(".py", requestBody, 
-                createEnvVars(targetLocation.root, uri),
+        CGI cgi(".py", requestBody,
+                createEnvVars(targetLocation.root, uri, targetLocation),
                 this->bodyLength, targetLocation.root + targetLocation.uploadTo);
         response = getHTMLBoilerPlate(RS200, "OK", getFileContent(".cgi_output"));
         write(this->fd, response.c_str(), response.length());
@@ -138,13 +142,13 @@ void Client::handleDeleteRequest(std::string& root, std::string& uri) {
     }
 }
 
-std::vector<std::string> Client::createEnvVars(const std::string& serverRoot, std::string uri) {
+std::vector<std::string> Client::createEnvVars(const std::string& serverRoot, std::string uri, const location_t& targetLocation) {
     std::vector<std::string> envVars;
 
     if (uri.at(0) == '/')
         uri.erase(0, 1);
-    std::cout << "SCRIPT_FILENAME = " << (serverRoot + uri) << std::endl;
-    envVars.push_back("SCRIPT_FILENAME=" + (serverRoot + uri));
+    std::cout << "SCRIPT_FILENAME = " << (serverRoot + targetLocation.cgi_path + uri) << std::endl;
+    envVars.push_back("SCRIPT_FILENAME=" + (serverRoot + targetLocation.cgi_path + uri));
 
     if (headers.count("Content-Length") > 0)
         envVars.push_back("CONTENT_LENGTH=" + headers["Content-Length"]);
@@ -217,42 +221,40 @@ void Client::sendErrorCode(std::string code) {
 }
 
 void Client::resolveLocation(std::string& root, std::string& uri, size_t safety_cap) {
-    if (safety_cap >= 20)
+    if (safety_cap >= 10)
         throw ClientException(RS508);
 
     size_t locate;
-    locationMap::const_iterator tempLocation;
-    locationMap::const_iterator targetLocation;
-    for (tempLocation = server.getLocations().begin(); tempLocation != server.getLocations().end(); tempLocation++) {
-        targetLocation = tempLocation;
-        if (tempLocation->first == "/" && uri != "/") continue;
+    locationMap::const_iterator location;
+    for (location = server.getLocations().begin(); location != server.getLocations().end(); location++) {
+        if (location->first == "/" && uri != "/") continue;
 
-        if (uri.find(tempLocation->first + '/') == std::string::npos && !endsWith(uri, tempLocation->first))
+        if (uri.find(location->first + '/') == std::string::npos && !endsWith(uri, location->first))
             continue;
-        locate = uri.find(tempLocation->first);
+        locate = uri.find(location->first);
 
         // if no allow_methods are set or method is forbidden
-        if (tempLocation->second.allowed_methods.size() != 0 && std::find(tempLocation->second.allowed_methods.begin(),
-                                                                          tempLocation->second.allowed_methods.end(),
-                                                                          this->method) == tempLocation->second.allowed_methods.end())
+        if (location->second.allowed_methods.size() != 0 && std::find(location->second.allowed_methods.begin(),
+                                                                      location->second.allowed_methods.end(),
+                                                                      this->method) == location->second.allowed_methods.end())
             throw ClientException(RS405);
 
-        if (tempLocation->second.redirect.size()) {
-            uri.erase(locate, tempLocation->first.size())
-               .insert(locate, tempLocation->second.redirect);
-            this->resolveLocation(root, uri, safety_cap);
+        if (location->second.redirect.size()) {
+            uri.erase(locate, location->first.size())
+                .insert(locate, location->second.redirect);
+            this->resolveLocation(root, uri, safety_cap + 1);
             return;
         }
 
-        if (tempLocation->second.root.size()) {
-            uri.erase(locate, tempLocation->first.size());
-            root = tempLocation->second.root;
+        if (location->second.root.size()) {
+            uri.erase(locate, location->first.size());
+            root = location->second.root;
         }
 
         if (isDirectory((root + uri).c_str())) {
-            if (tempLocation->second.try_file.size())
-                this->sendResponse(root + uri + "/" + tempLocation->second.try_file);
-            else if (tempLocation->second.auto_index) {
+            if (location->second.try_file.size())
+                this->sendResponse(root + uri + "/" + location->second.try_file);
+            else if (location->second.auto_index) {
                 this->sendDirectoryListing(root + uri.erase(0, 1));
             } else if (uri == "/")
                 this->sendResponse(root + server.getIndex());
@@ -261,14 +263,18 @@ void Client::resolveLocation(std::string& root, std::string& uri, size_t safety_
             }
             return;
         }
+        break;
     }
-    // !TODO
-    // location '/'
+    if (location == server.getLocations().end() && (this->method == "POST" || this->method == "DELETE")) {
+        throw ClientException(RS403);
+    }
 
-    //if (tempLocation == server.getLocations().end() && this->method == "POST") {
-    //    throw ClientException(RS403);
-    //}
-    this->resolveResponse(root, uri, targetLocation->second);
+    if (this->method == "POST") {
+        size_t locate = uri.find(location->first);
+        if (locate != std::string::npos)
+            uri.erase(locate, location->first.size());
+    }
+    this->resolveResponse(root, uri, location->second);
 }
 
 void Client::resolveResponse(std::string& root, std::string& uri, const location_t& targetLocation) {
@@ -279,8 +285,6 @@ void Client::resolveResponse(std::string& root, std::string& uri, const location
     } else if (this->method == "DELETE") {
         handleDeleteRequest(root, uri);
     }
-    request.clear();
-    requestBody.clear();
 }
 
 void Client::response(void) {
@@ -300,4 +304,6 @@ void Client::response(void) {
         this->sendErrorCode(e.what());
         logMessage(this->method + " " + this->uri_target + RED + " -> " + e.what());
     }
+    request.clear();
+    requestBody.clear();
 }

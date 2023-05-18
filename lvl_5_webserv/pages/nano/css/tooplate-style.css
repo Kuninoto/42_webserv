@@ -29,10 +29,6 @@ a:hover {
   color: #30adad;
 }
 
-.tm-about-text a {
-  color: #9f6;
-}
-
 h1,
 h2,
 p,
@@ -76,11 +72,11 @@ address,
 .tm-about,
 .tm-contact {
   display: flex;
+  place-content: center;
+  align-items: center;
+  height: 30vh;
 }
 
-.tm-contact {
-  flex-direction: row-reverse;
-}
 .tm-about > div {
   flex: 1 1;
 }
@@ -146,17 +142,26 @@ textarea {
   margin-left: auto;
 }
 
+.tm-center {
+  margin: auto;
+}
+
 .tm-btn-submit {
   background: none;
-  color: white;
+  color: #5e503f;
+  padding: 4px 12px;
+  border-radius: 5%;
+  background-color: white;
   font-size: 1rem;
-  border: 0;
+  border: 1px solid #5e503f;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .tm-btn-submit:hover {
-  color: #000000;
+  color: white;
+  border: 1px solid white;
+  background-color: #5e503f;
 }
 
 .tm-social-link {
