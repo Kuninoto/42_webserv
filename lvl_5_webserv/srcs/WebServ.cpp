@@ -18,11 +18,11 @@ static void closeServer(int signum) {
     g_stopServer = true;
 }
 
-WebServ::WebServ(std::string filename) {
+WebServ::WebServ(const std::string& configFile) {
     signal(SIGPIPE, SIG_IGN);
     signal(SIGINT, closeServer);
 
-    this->servers = this->parseConfigFile(filename);
+    this->servers = this->parseConfigFile(configFile);
     this->duplicateServers();
 
     this->reserved_sockets = this->getServerUsedSockets();
@@ -49,20 +49,23 @@ void WebServ::bootServers(void) {
         if (setsockopt(server->getSocketFd(), SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(int)) < 0)
             throw std::runtime_error("fatal: setsocketopt(): " + std::string(strerror(errno)));
 
-        if (getaddrinfo(server->getHost().c_str(), server->getPort().c_str(), &hints, &result) != 0) {
+        if (getaddrinfo(server->getHost().c_str(), server->getPort().c_str(), &hints, &result) == -1) {
             freeaddrinfo(result);
+            result = NULL;
             throw std::runtime_error("fatal: getaddrinfo(): " + std::string(strerror(errno)));
         }
 
-        if (bind(server->getSocketFd(), result->ai_addr, result->ai_addrlen) == -1) {
-            freeaddrinfo(result);
-            throw std::runtime_error("fatal: bind(): " + std::string(strerror(errno)));
+        if (result) {
+            if (bind(server->getSocketFd(), result->ai_addr, result->ai_addrlen) == -1) {
+                throw std::runtime_error("fatal: bind(): " + std::string(strerror(errno)));
+            }
         }
 
         if (listen(server->getSocketFd(), MAX_PENDING_CONNECTIONS) == -1)
             throw std::runtime_error("fatal: listen(): " + std::string(strerror(errno)));
 
-        freeaddrinfo(result);
+        if (result)
+            freeaddrinfo(result);
         pollstruct.fd = server->getSocketFd();
         pollstruct.events = POLLIN;
         pollstruct.revents = 0;
@@ -119,8 +122,8 @@ void WebServ::runServers(void) {
                     continue;
                 }
 
-				char buffer[2048] = {0};
-				int rd_bytes;
+                char buffer[2048] = {0};
+                int rd_bytes;
                 if ((rd_bytes = recv(pollfds.at(i).fd, buffer, 2048, 0)) > 0) {
                     clients.at(clientFdIdx).setRequest(buffer, rd_bytes);
                 } else {
@@ -240,20 +243,26 @@ static locationPair parseLocation(const std::map<std::string, std::string>& lexe
         newLocation.try_file = lexerParameters.find("try_file")->second;
     if (lexerParameters.count("cgi_path") > 0 && lexerParameters.count("cgi_ext") > 0) {
         newLocation.hasCGI = true;
-        newLocation.cgi_path = lexerParameters.find("cgi_path")->second;
+
+        std::string temp_path = lexerParameters.find("cgi_path")->second;
+        if (*(temp_path.end() - 1) != '/')
+            newLocation.cgi_path = temp_path + "/";
+        else
+            newLocation.cgi_path = temp_path;
+
         newLocation.cgi_ext = lexerParameters.find("cgi_ext")->second;
     } else
         newLocation.hasCGI = false;
     if (lexerParameters.count("upload_to") > 0) {
         std::string tempUploadTo = lexerParameters.find("upload_to")->second;
 
-		if (tempUploadTo.at(0) == '/') 
-			newLocation.uploadTo = tempUploadTo.erase(0, 1); 
-		else
-			newLocation.uploadTo = tempUploadTo;
-	}
-	trimStr(locationPath, " ");
-	return std::make_pair<std::string, location_t>(locationPath, newLocation);
+        if (tempUploadTo.at(0) == '/')
+            newLocation.uploadTo = tempUploadTo.erase(0, 1);
+        else
+            newLocation.uploadTo = tempUploadTo;
+    }
+    trimStr(locationPath, " ");
+    return std::make_pair<std::string, location_t>(locationPath, newLocation);
 }
 
 static void readLocationBlock(Lexer& lexer, Token& token) {

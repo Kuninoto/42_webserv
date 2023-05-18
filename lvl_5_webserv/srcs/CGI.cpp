@@ -1,7 +1,7 @@
 #include "CGI.hpp"
 
-#include <unistd.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 #include <iostream>
 #include <sstream>
@@ -30,15 +30,10 @@ CGI::CGI(const std::string& cgi_ext, const std::string& request,
          const std::vector<std::string>& envVars, size_t bodyLength,
          const std::string& uploadTo)
     : request(request), bodyLength(bodyLength), uploadTo(uploadTo) {
-    cout << "RUNNING CGI" << endl;
     this->cgi_path = getScriptFileName(envVars);
     if (cgi_path.empty())
         throw CGIException("No SCRIPT_FILENAME provided");
     this->cgi_ext = cgi_ext;
-    
-    cout << "CGI PATH: " << this->cgi_path << endl;
-    cout << "CGI Ext: " << this->cgi_ext << endl;
-    cout << "bodyLength = " << this->bodyLength << endl;
 
     size_t dotPos = cgi_path.find_last_of('.');
     if (dotPos == std::string::npos)
@@ -70,12 +65,6 @@ CGI::~CGI(void) {
  */
 void CGI::runScript(void) {
     pid_t pid;
-
-    std::cout << "RUNNER = " << runner << std::endl;
-    std::cout << "ARGS = ";
-    for (size_t i = 0; argv[i]; i += 1)
-        std::cout << argv[i] << " ";
-    std::cout << std::endl;
 
     // !TODO
     // perhaps change to tmpfile()
@@ -126,12 +115,11 @@ void CGI::createArgvAndEnvp(const std::vector<std::string>& envVars) {
     }
 
     this->envp = new char*[envVars.size() + 1];
-  
+
     size_t i = 0;
     std::vector<std::string>::const_iterator v_it;
     for (v_it = envVars.begin(); v_it != envVars.end(); v_it++, i++) {
         this->envp[i] = strdup(v_it->c_str());
-        std::cout << "envp[" << i << "] = " << envp[i] << std::endl;
     }
     this->envp[i] = NULL;
 }

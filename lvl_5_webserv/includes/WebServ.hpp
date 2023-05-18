@@ -11,7 +11,7 @@
 
 class WebServ {
    public:
-    WebServ(std::string filename);
+    WebServ(const std::string& configFile);
     ~WebServ(void);
 
     void addParam(const std::string& param, const std::string& value) { params[param] = value; }

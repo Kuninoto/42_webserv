@@ -26,13 +26,13 @@
 #define RS505 "505 HTTP Version Not Supported"
 #define RS508 "508 Loop Detected"
 
-#define TIMEOUT_TIME_SECONDS 10
+#define TIMEOUT_TIME_SECONDS 90
 
 class Client {
    public:
     Client(Server server, int fd);
     std::string getRequest(void) { return this->request; };
-    void setRequest(const char *chunk, size_t bufferLength);
+    void setRequest(const char* chunk, size_t bufferLength);
 
     void response(void);
     int getFd(void) const { return this->fd; };
@@ -75,7 +75,6 @@ class Client {
     time_t last_request;
 
     void parseRequest(void);
-    bool allHeadersSet(void);
     void resolveLocation(std::string& root, std::string& uri, size_t safety_cap);
     void resolveResponse(std::string& root, std::string& uri, const location_t& targetLocation);
     void sendDirectoryListing(std::string uri);
@@ -83,7 +82,7 @@ class Client {
     void sendErrorCode(std::string code);
     void handleGetRequest(std::string& root, std::string& uri);
     void handlePostRequest(std::string& root, std::string& uri, const location_t& targetLocation);
-    std::vector<std::string> createEnvVars(const std::string& serverRoot, std::string uri);
+    std::vector<std::string> createEnvVars(const std::string& serverRoot, std::string uri, const location_t& targetLocation);
     void handleDeleteRequest(std::string& root, std::string& uri);
 };
 

@@ -13,12 +13,21 @@ void printStartUpMessage(void) {
 }
 
 int main(int argc, char** argv) {
-    if (argc != 2 || !argv[1][0])
+    if (argc > 3)
         return panic(NO_CONFIG_FILE_ERR);
+
+    std::string configFile;
+    if (argc == 1)
+        configFile = "config/default.conf";
+    else {
+        if (!argv[1][0])
+            return panic(NO_CONFIG_FILE_ERR);
+        configFile = argv[1];
+    }
 
     try {
         printStartUpMessage();
-        WebServ webserv(argv[1]);
+        WebServ webserv(configFile);
         webserv.bootServers();
         webserv.runServers();
         return EXIT_SUCCESS;
