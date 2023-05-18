@@ -147,9 +147,7 @@ std::vector<std::string> Client::createEnvVars(const std::string& serverRoot, st
 
     if (uri.at(0) == '/')
         uri.erase(0, 1);
-    std::cout << "SCRIPT_FILENAME = " << (serverRoot + targetLocation.cgi_path + uri) << std::endl;
     envVars.push_back("SCRIPT_FILENAME=" + (serverRoot + targetLocation.cgi_path + uri));
-
     if (headers.count("Content-Length") > 0)
         envVars.push_back("CONTENT_LENGTH=" + headers["Content-Length"]);
     else

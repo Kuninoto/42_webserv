@@ -140,25 +140,3 @@ https://en.wikipedia.org/wiki/Network_socket
 
 
 https://en.wikipedia.org/wiki/Request_for_Comments
-
-
-
-
-
-
-
-
-
-
-
-Webserv Testers
-
--Intra Tester
-
--https://github.com/t0mm4rx/webserv/tree/main/tests
-
-
--https://github.com/fredrikalindh/webserv_tester
-
-
--https://github.com/hygoni/webserv_tester
