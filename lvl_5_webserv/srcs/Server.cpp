@@ -48,7 +48,8 @@ Server::Server(std::map<std::string, std::string>& parameters) {
         "error_page",
         "root",
         "index",
-        "client_max_body_size"};
+        "client_max_body_size"
+    };
     
     const static std::string forbiddenKeyWords[] = {
         "upload_to",
@@ -56,7 +57,8 @@ Server::Server(std::map<std::string, std::string>& parameters) {
         "cgi_ext",
         "allow_methods",
         "auto_index",
-        "try_file"};
+        "try_file"
+    };
 
     for (size_t i = 0; i < 6; i += 1) {
         if (parameters.count(mustHaveKeyWords[i]) == 0)
@@ -100,10 +102,11 @@ std::string Server::createErrorResponse(void) {
         "HTTP/1.1 404 Not Found\n"
         "Date: " + getTimeStamp() + "\n"
         "Server: Server: 42_Webserv/1.0 (Linux)\n" +
-        "Content-Type: " + getFileType(path_to_error_page) + "; charset=UTC-8\n" +
+        "Content-Type: " + getFileType(path_to_error_page) + "; charset=UTF-8\n" +
         "Content-Length: " + getFileSize(path_to_error_page) + "\n\n";
 
-    error_response.append((std::istreambuf_iterator<char>(error_page_file)), std::istreambuf_iterator<char>());
+    error_response.append((std::istreambuf_iterator<char>(error_page_file)),
+                           std::istreambuf_iterator<char>());
     return error_response;
 }
 

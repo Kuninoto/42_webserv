@@ -57,6 +57,19 @@
         </div>
 
         <div class="tm-contact-form-container">
+          <h2 class="tm-h2">CGI GET example</h2>
+          <form
+            action="/cgi_get/get_example.py"
+            method="GET"
+            class="tm-contact-form"
+          >
+            <button class="tm-center tm-btn-submit">
+              Show me!
+            </button>
+          </form>
+        </div>
+
+        <div class="tm-contact-form-container">
           <h2>Delete File</h2>
             <input type="text" id="filename" name="filename" />
             <button onclick="sendDeleteRequest()">Delete File</button>

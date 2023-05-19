@@ -64,8 +64,7 @@ void WebServ::bootServers(void) {
         if (listen(server->getSocketFd(), MAX_PENDING_CONNECTIONS) == -1)
             throw std::runtime_error("fatal: listen(): " + std::string(strerror(errno)));
 
-        if (result)
-            freeaddrinfo(result);
+        freeaddrinfo(result);
         pollstruct.fd = server->getSocketFd();
         pollstruct.events = POLLIN;
         pollstruct.revents = 0;
@@ -105,7 +104,7 @@ void WebServ::closeClientConnection(int idx, int clientFdIdx) {
     close(pollfds.at(idx).fd);
     pollfds.erase(pollfds.begin() + idx);
     clients.erase(clients.begin() + clientFdIdx);
-    std::cout << RED "Connection close" << std::endl;
+    logMessage("Connection closed");
 }
 
 void WebServ::runServers(void) {
@@ -133,19 +132,19 @@ void WebServ::runServers(void) {
             }
 
             if (revent & POLLERR) {
-                logMessage(RED "POLLERR");
+                logMessage("Connection closed" RED "ERROR: " RESET "POLLERR");
                 closeClientConnection(i, clientFdIdx);
                 continue;
             }
 
             if (revent & POLLHUP) {
-                logMessage(RED "POLLHUP");
+                logMessage("Connection closed" RED "ERROR: " RESET "POLLHUP");
                 closeClientConnection(i, clientFdIdx);
                 continue;
             }
 
             if (revent & POLLNVAL) {
-                logMessage(RED "POLLNVAL");
+                logMessage("Connection closed" RED "ERROR: " RESET "POLLNVAL");
                 closeClientConnection(i, clientFdIdx);
                 continue;
             }
@@ -155,6 +154,7 @@ void WebServ::runServers(void) {
 
             if (revent & POLLOUT) {
                 if (clients.at(clientFdIdx).timeout()) {
+                    logMessage("Time out");
                     closeClientConnection(i, clientFdIdx);
                     continue;
                 }
@@ -198,8 +198,9 @@ size_t WebServ::getServerUsedSockets(void) {
     size_t nr_sockets = 0;
 
     for (server = this->servers.begin(); server != this->servers.end(); server++) {
-        if (server->isDefaultServer)
+        if (server->isDefaultServer) {
             nr_sockets += 1;
+        }
     }
     return nr_sockets;
 }
@@ -214,8 +215,9 @@ Server& WebServ::getServerByName(const std::string& buffer, Server& default_serv
 
     std::vector<Server>::iterator server;
     for (server = this->servers.begin(); server != this->servers.end(); server++) {
-        if (requested_server_name == server->getServerName() && server->getHost() == default_server.getHost())
+        if (requested_server_name == server->getServerName() && server->getHost() == default_server.getHost()) {
             return *server;
+        }
     }
     return default_server;
 }

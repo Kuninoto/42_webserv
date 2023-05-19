@@ -78,12 +78,12 @@ class Client {
     void resolveLocation(std::string& root, std::string& uri, size_t safety_cap);
     void resolveResponse(std::string& root, std::string& uri, const location_t& targetLocation);
     void sendDirectoryListing(std::string uri);
-    void sendResponse(std::string uri);
+    void sendGetResponse(std::string uri);
     void sendErrorCode(std::string code);
-    void handleGetRequest(std::string& root, std::string& uri);
+    void handleGetRequest(std::string& root, std::string& uri, const location_t& targetLocation);
     void handlePostRequest(std::string& root, std::string& uri, const location_t& targetLocation);
-    std::vector<std::string> createEnvVars(const std::string& serverRoot, std::string uri, const location_t& targetLocation);
     void handleDeleteRequest(std::string& root, std::string& uri);
+    std::vector<std::string> createEnvVars(const std::string& serverRoot, std::string uri, const location_t& targetLocation);
 };
 
 #endif  // CLIENT_HPP
