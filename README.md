@@ -7,7 +7,7 @@ Project done in collaboration with:
 ### Grade: 100/100
 
 ###  Demonstration:
-![](./extras/showcase.gif)
+![](./extras/logs_showcase.png)
 
 ### Overview
 42_Webserv is a web server written from scratch in C++ (C++98), capable of handling multiple clients simultaneously.  
