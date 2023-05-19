@@ -6,6 +6,7 @@
 #include <sstream>
 
 #include "CGI.hpp"
+#include "utils.hpp"
 
 Client::Client(Server server, int fd) : server(server), fd(fd), request_sent(false){};
 
@@ -39,7 +40,7 @@ void Client::parseRequest(void) {
     if (this->uri_target.length() > 1024)
         throw ClientException(RS414);
 
-    // if URI contains ..
+    // if URI contains ../ or is literally ..
     if (this->uri_target.find("../") != std::string::npos || this->uri_target == "..")
         throw ClientException(RS400);
 
@@ -68,8 +69,8 @@ void Client::parseRequest(void) {
         }
     }
 
-    // GET doesn't have body so
-    // parsing ends here
+    // GET and DELETE don't have body
+    // so parsing ends here
     if (method == "GET" || method == "DELETE")
         return;
 
@@ -77,28 +78,53 @@ void Client::parseRequest(void) {
     if (this->bodyLength > this->server.getMaxBodySize())
         throw ClientException(RS413);
 
+    // Get ss read position
     std::streampos tempPos = ss.tellg();
+
+    // open a new ss with the same content as ss but with binary mode
     std::stringstream binary_ss(ss.str(), std::stringstream::in | std::stringstream::binary);
+
+    // move binary_ss read position to tempPos (ss read position)
     binary_ss.seekg(tempPos);
 
+    // resize requestBody to bodyLength so that
+    // we can read directly to the its storage
+    // bodyLength characters
     this->requestBody.resize(this->bodyLength);
 
     binary_ss.read(&requestBody[0], this->bodyLength);
 }
 
-void Client::handleGetRequest(std::string& root, std::string& uri) {
+void Client::handleGetRequest(std::string& root, std::string& uri, const location_t& targetLocation) {
     if (uri == "/favicon.ico") {
-        sendResponse("pages/favicon.ico");
+        sendGetResponse("pages/favicon.ico");
         return;
+    }
+
+    if (*(uri.end() - 1) == '?') {
+        uri.erase(uri.end() - 1);
+        std::string response;
+        try {
+            CGI cgi(".py", requestBody,
+                    createEnvVars(targetLocation.root, uri, targetLocation),
+                    0, "");
+            response = getHTMLBoilerPlate(RS200, "OK", getFileContent(".cgi_output"));
+            write(this->fd, response.c_str(), response.length());
+            logMessage(this->method + " " + uri + GREEN + " -> 200 OK");
+        } catch (const std::exception& e) {
+            response = getHTMLBoilerPlate(RS500, "Internal Server Error", "<h1>500 Internal Server Error</h1>");
+            write(this->fd, response.c_str(), response.length());
+            logMessage(this->method + " " + uri + RED + " -> 500 Internal Server Error");
+            std::cerr << e.what() << '\n';
+        }
     }
 
     if (uri == "/")
         uri += server.getIndex();
     if (isDirectory((root + uri).c_str())) {
-        std::cout << "b1" << std::endl;
         throw ClientException(RS403);
     }
-    sendResponse(root + uri.erase(0, 1));
+    sendGetResponse(root + uri.erase(0, 1));
 }
 
 void Client::handlePostRequest(std::string& root, std::string& uri, const location_t& targetLocation) {
@@ -147,11 +173,13 @@ std::vector<std::string> Client::createEnvVars(const std::string& serverRoot, st
 
     if (uri.at(0) == '/')
         uri.erase(0, 1);
+
     envVars.push_back("SCRIPT_FILENAME=" + (serverRoot + targetLocation.cgi_path + uri));
-    if (headers.count("Content-Length") > 0)
+
+    if (headers.count("Content-Length") > 0) {
         envVars.push_back("CONTENT_LENGTH=" + headers["Content-Length"]);
-    else
-        envVars.push_back("CONTENT_LENGTH=-1");
+    }
+
     envVars.push_back("CONTENT_TYPE=" + headers["Content-Type"]);
     envVars.push_back("GATEWAY_INTERFACE=CGI/1.1");
     envVars.push_back("REQUEST_METHOD=" + this->method);
@@ -171,7 +199,7 @@ void Client::sendDirectoryListing(std::string uri) {
         std::string temp(ent->d_name);
         if (temp == "." || temp == "..")
             continue;
-        body.append("\t<a href=\"" + this->uri_target + "/" + ent->d_name + "\">" + ent->d_name + "</a><br>\n");
+        body.append("\t<a href=\"" + this->uri_target + "/" + ent->d_name + "\">" + ent->d_name + "</a>\n<br>\n");
     }
     closedir(dir);
 
@@ -182,7 +210,7 @@ void Client::sendDirectoryListing(std::string uri) {
     request.clear();
 }
 
-void Client::sendResponse(std::string uri) {
+void Client::sendGetResponse(std::string uri) {
     std::ifstream file(uri.c_str(), std::ios::binary | std::ios::in);
 
     if (!file.is_open()) {
@@ -214,8 +242,6 @@ void Client::sendErrorCode(std::string code) {
 
     const std::string& response = getHTMLBoilerPlate(code, code, body);
     write(this->fd, response.c_str(), response.length());
-
-    this->request.clear();
 }
 
 void Client::resolveLocation(std::string& root, std::string& uri, size_t safety_cap) {
@@ -251,11 +277,11 @@ void Client::resolveLocation(std::string& root, std::string& uri, size_t safety_
 
         if (isDirectory((root + uri).c_str())) {
             if (location->second.try_file.size())
-                this->sendResponse(root + uri + "/" + location->second.try_file);
+                this->sendGetResponse(root + uri + "/" + location->second.try_file);
             else if (location->second.auto_index) {
                 this->sendDirectoryListing(root + uri.erase(0, 1));
             } else if (uri == "/")
-                this->sendResponse(root + server.getIndex());
+                this->sendGetResponse(root + server.getIndex());
             else {
                 throw ClientException(RS403);
             }
@@ -267,7 +293,8 @@ void Client::resolveLocation(std::string& root, std::string& uri, size_t safety_
         throw ClientException(RS403);
     }
 
-    if (this->method == "POST") {
+    // Requests to CGI
+    if ((this->method == "POST") || (this->method == "GET" && *(uri.end() - 1) == '?')) {
         size_t locate = uri.find(location->first);
         if (locate != std::string::npos)
             uri.erase(locate, location->first.size());
@@ -277,7 +304,7 @@ void Client::resolveLocation(std::string& root, std::string& uri, size_t safety_
 
 void Client::resolveResponse(std::string& root, std::string& uri, const location_t& targetLocation) {
     if (this->method == "GET") {
-        handleGetRequest(root, uri);
+        handleGetRequest(root, uri, targetLocation);
     } else if (this->method == "POST") {
         handlePostRequest(root, uri, targetLocation);
     } else if (this->method == "DELETE") {

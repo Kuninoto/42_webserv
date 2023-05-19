@@ -76,7 +76,8 @@ void CGI::runScript(void) {
     if (pipe(pipedes) == -1)
         throw CGIException("pipe() failed");
 
-    fcntl(pipedes[WRITE_END], F_SETPIPE_SZ, this->bodyLength);
+    if (this->bodyLength > 0)
+        fcntl(pipedes[WRITE_END], F_SETPIPE_SZ, this->bodyLength);
 
     write(pipedes[WRITE_END], this->request.data(), this->bodyLength);
     close(pipedes[WRITE_END]);

@@ -1,5 +1,5 @@
 CC = c++
-CFLAGS = -Wall -Wextra -Werror -std=c++98 -g # -Wno-unused-result -O3
+CFLAGS = -Wall -Wextra -Werror -std=c++98 -g
 INCLUDE = -I./includes
 VPATH = srcs srcs/utils
 RM = rm -rf
@@ -8,7 +8,6 @@ UTILS = getNextLine splitStr trimStr endsWith isOnlySpaces sliceVec time file ft
 GENERAL = Lexer CGI Server Client WebServ
 
 NAME = webserv
-TEST_CONFIG_FILE = config/test.conf
 
 SRCS = $(addsuffix .cpp, $(UTILS))\
 	   $(addsuffix .cpp, $(GENERAL))\
@@ -42,7 +41,7 @@ re: fclean all
 
 run: all clean
 	echo ""
-	./$(NAME) $(TEST_CONFIG_FILE)
+	./$(NAME)
 
 unit_tests: all clean
 	echo "CONFIG FILE VALIDATION -----------"
@@ -70,6 +69,11 @@ unit_tests: all clean
 	./$(NAME) config/error/uneven_brackets.conf
 
 	echo ""
+
+	echo "MISSING SEMICOLON"
+	./$(NAME) config/error/missing_semicolon.conf
+
+	echo ""
  
 	echo "EMPTY SERVER BLOCK"
 	./$(NAME) config/error/empty_server.conf
@@ -93,11 +97,6 @@ unit_tests: all clean
  
 	echo "MORE THAN ONE VALUE FOR A KEYWORD"
 	./$(NAME) config/error/more_than_one_value.conf
-
-
-noleaks: re clean
-	echo ""
-	valgrind --leak-check=full -s --show-leak-kinds=all ./$(NAME)
 
 .PHONY: all webserv clean fclean re run noleaks
 
