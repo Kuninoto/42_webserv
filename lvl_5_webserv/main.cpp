@@ -8,7 +8,7 @@ void printStartUpMessage(void) {
     system("clear");
     cout << "42_Webserv version: 42_Webserv/1.0\n"
          << "Compliant with the c++98 standard\n"
-         << "Configure arguments: \"-Wall -Wextra -Werror -std=c++98 -g -fsanitize=address\"\n\n"
+         << "Configure arguments: \"-Wall -Wextra -Werror -std=c++98\"\n\n"
          << getTimeStamp() << endl;
 }
 
