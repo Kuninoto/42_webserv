@@ -28,10 +28,9 @@ void Client::parseRequest(void) {
     if (components.size() != 3)
         throw ClientException(RS400);
 
-    // Set the method of the request if it's an implemented one (GET, POST, or DELETE)
-    if (components.at(0) == "GET" || components.at(0) == "POST" || components.at(0) == "DELETE")
-        this->method = components.at(0);
-    else
+    // Set the method of the request and throw 501 if it's not an implemented one (GET, POST, or DELETE)
+    this->method = components.at(0);
+    if (!(components.at(0) == "GET" || components.at(0) == "POST" || components.at(0) == "DELETE"))
         throw ClientException(RS501);
 
     // Set the target URI of the request
@@ -96,11 +95,6 @@ void Client::parseRequest(void) {
 }
 
 void Client::handleGetRequest(std::string& root, std::string& uri, const location_t& targetLocation) {
-    if (uri == "/favicon.ico") {
-        sendGetResponse("pages/favicon.ico");
-        return;
-    }
-
     if (*(uri.end() - 1) == '?') {
         uri.erase(uri.end() - 1);
         std::string response;

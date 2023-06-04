@@ -20,6 +20,7 @@
 
 #define ERROR_MSG_PREFFIX "webserv: error: "
 #define NO_CONFIG_FILE_ERR "no configuration file provided"
+#define ARGC_ERR "invalid number of arguments"
 
 /**
  * @brief Writes <error_msg> in the cerr stream followed by an endl.
