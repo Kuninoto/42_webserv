@@ -16,7 +16,7 @@ Project done in collaboration with:
 
 ### Features
 - NGINX-like configuration file
-- Handling of **GET**, **POST**, **DELETE**   
+- Handling of the **GET**, **POST** and **DELETE** HTTP request methods  
 - File upload  
 - Python CGI support   
 

@@ -14,7 +14,7 @@ void printStartUpMessage(void) {
 
 int main(int argc, char** argv) {
     if (argc > 3)
-        return panic(NO_CONFIG_FILE_ERR);
+        return panic(ARGC_ERR);
 
     std::string configFile;
     if (argc == 1)
