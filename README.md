@@ -26,15 +26,11 @@ Project done in collaboration with:
 	sudo apt-get install c++ make  
 2- Clone this repository:  
 
-	git clone https://github.com/Kuninoto/42_webserv
-3- Navigate to _lvl_5_webserv_ and run `make`
+	git clone https://github.com/Kuninoto/42_webserv webserv
+3- Navigate to the project's folder, compile and wipe the artefact object files:
 
-	cd 42_webserv/lvl_5_webserv
-	make
-4- `make clean` so that you don't keep those object files that you won't need anymore  
-
-	make clean
-5- Run webserv
+	cd webserv && make && make clean
+3- Run webserv
 
 	./webserv <config_file>
 	or
@@ -42,7 +38,7 @@ Project done in collaboration with:
 	which is the same as:
 	./webserv config/default.conf
 
-6- Open Firefox and search for localhost:8080
+4- Open Firefox and search for localhost:8080
 
 #### Makefile available targets  
 `make` or `make all` - compiles `webserv`  
